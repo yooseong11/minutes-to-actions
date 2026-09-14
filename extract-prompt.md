@@ -16,6 +16,13 @@ AI가 계산하면 틀리고, 틀려도 티가 안 납니다. AI가 문장을 �
 ```
 당신은 회의록에서 항목을 발췌하는 도구입니다. 요약하지 않습니다.
 
+## 0단계 — 회의 날짜
+
+본문 머리에 적힌 회의 날짜를 **원문 표현 그대로** meetingDateRaw에 넣습니다.
+형식을 바꾸지 말고, 요일·시각·장소는 빼고 날짜 부분만 옮깁니다.
+본문에 없으면 null. 오늘 날짜로 채우지 마십시오.
+"다음 회의: 9/15(월)"는 회의 날짜가 아닙니다.
+
 ## 원칙
 
 1. 추측하지 않습니다. 본문에 없으면 null을 넣습니다.
@@ -94,7 +101,7 @@ AI가 계산하면 틀리고, 틀려도 티가 안 납니다. AI가 문장을 �
 ## User message
 
 ```
-회의 날짜: {{meetingDate}}   ← 사용자가 화면에서 입력 (본문에 없을 수 있음)
+회의 날짜: {{meetingDate}}   ← 사용자가 화면에서 **직접 고쳤을 때만** 값이 옴. 아니면 "(입력 없음)"
 
 --- 회의록 ---
 {{text}}
@@ -160,6 +167,13 @@ AI가 계산하면 틀리고, 틀려도 티가 안 납니다. AI가 문장을 �
 
 ### 변경 이력
 
+**4차 — 기준일 버그 수정 후 (2026-09-14)**
+
+- **0단계 `meetingDateRaw` 지시 추가** — 스키마에는 있는데 프롬프트에 채우라는 말이 없어서
+  AI가 계속 null을 냈습니다. 원문에 `2026-09-08 (월)`이 버젓이 적힌 샘플 01도 null.
+  스키마에 필드를 넣는 것과 채우라고 시키는 것은 다른 일입니다
+- User message에 오늘 날짜를 "회의 날짜"로 넘기지 않음 — AI가 그걸 `meetingDateRaw`로 베낌
+
 **1차 — 샘플 02 대조 후**
 
 - `confidence` 삭제 — `reviewReasons`가 비었으면 high, 아니면 needs_review. 코드가 파생
@@ -208,6 +222,8 @@ AI가 계산하면 틀리고, 틀려도 티가 안 납니다. AI가 문장을 �
 
 | 작업 | 방법 |
 |---|---|
+| **기준일 결정** | `resolveMeetingDate(userDate, meetingDateRaw, fallbackDate)`. 우선순위 **사용자 지정 > 원문 > 오늘**. 어느 쪽을 썼는지 `meetingDateSource`로 내보냄 |
+| `meetingDateRaw` → 실제 날짜 | `parseAbsolute`. AI는 발췌만 하고 환산은 코드가 함 |
 | `dueDateRaw` → 실제 날짜 | `parseDue(dueDateRaw, anchorDateRaw ?? meetingDate)`. 실패하면 `due_unparseable` 승격 |
 | 역산 (만료 11/2 → 통보 10/3) | 위와 같은 파서. `anchorDateRaw` + "N일 전" 패턴 |
 | `assigneeRaw` → 인물 통합 | `attendeesRaw`와 대조. `contextRaw`가 다르면 별개 인물로 유지 |

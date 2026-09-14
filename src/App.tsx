@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { MeetingDateSource } from '../lib/postprocess.js'
 import type { ReviewReason } from '../lib/types.js'
 import { useExtract } from './useExtract.js'
 import './App.css'
@@ -7,9 +8,11 @@ import './App.css'
  * 섹션 3 — 붙여넣기 → 추출 → 결과.
  * 결과는 아직 날것(JSON)으로 보여줍니다. 항목 렌더는 다음 단계입니다.
  *
- * 회의 날짜는 묻지 않고 오늘로 보냅니다. 회의 직후에 쓰는 게 보통이고,
- * 붙여넣기 전에 날짜부터 고르게 하면 쓰기 싫어집니다.
- * 대신 "어느 날짜로 계산했는지"를 결과에 드러내고 거기서 고칠 수 있게 합니다.
+ * 회의 날짜는 붙여넣기 전에 묻지 않습니다. 날짜부터 고르게 하면 쓰기 싫어집니다.
+ * 대신 기준일 출처를 셋으로 나눠 서버가 정합니다 — 사용자 지정 > 원문 > 오늘.
+ * 화면은 오늘을 '회의 날짜'라고 우기지 않고 fallbackDate로만 보냅니다.
+ * 원문에 날짜가 적혀 있으면 그쪽이 이기고, 결과의 기준일이 날짜칸에 올라옵니다.
+ * 사용자가 날짜칸을 건드린 순간부터는 사용자 값이 무조건 이깁니다.
  *
  * 배지는 예외에만 답니다. 손댈 게 없는 항목은 아무 표시도 하지 않습니다.
  *   (표시 없음) — 기본. 그대로 저장된다
@@ -24,6 +27,14 @@ function today(): string {
   const d = new Date()
   const pad = (n: number) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+/** 기준일을 어디서 가져왔는지 사람 말로. 조용히 오늘로 계산하고 넘어가지 않습니다 */
+const DATE_SOURCE_LABEL: Record<MeetingDateSource, string> = {
+  user: '고르신 날짜를 기준으로 계산했어요',
+  document: '회의록 원문에 적힌 날짜를 기준으로 계산했어요',
+  fallback: '원문에 회의 날짜가 없어서 오늘을 기준으로 계산했어요',
+  none: '기준 날짜가 없어서 기한을 환산하지 못했어요',
 }
 
 const BADGE_STYLE: Record<ReviewReason, 'warn' | 'ask'> = {
@@ -41,14 +52,21 @@ const BADGE_STYLE: Record<ReviewReason, 'warn' | 'ask'> = {
 
 export default function App() {
   const [text, setText] = useState('')
-  const [meetingDate, setMeetingDate] = useState(today())
+  // 사용자가 날짜칸을 직접 고쳤을 때만 값이 들어갑니다. 안 고쳤으면 null.
+  const [pickedDate, setPickedDate] = useState<string | null>(null)
   const { state, extract } = useExtract()
 
   const loading = state.status === 'loading'
   const ask = Object.values(BADGE_STYLE).filter((v) => v === 'ask').length
   const warn = Object.values(BADGE_STYLE).length - ask
 
-  const submit = () => void extract(text, meetingDate)
+  // 날짜칸에 보이는 값: 고른 값 > 서버가 쓴 기준일 > 오늘.
+  // 서버가 원문에서 9/8을 읽었으면 칸에도 9/8이 올라옵니다. 오늘로 남겨두면
+  // 일주일 밀린 기한이 정상으로 보입니다 (실제로 그랬습니다).
+  const resolvedDate = state.status === 'done' ? state.meeting.meetingDate : null
+  const shownDate = pickedDate ?? resolvedDate ?? today()
+
+  const submit = () => void extract(text, pickedDate, today())
 
   return (
     <div className="page">
@@ -90,18 +108,22 @@ export default function App() {
                 기준이 틀리면 기한이 조용히 다 틀리므로 숨기지 않습니다. */}
             <div className="anchor">
               <label className="anchor-label" htmlFor="meeting-date">
-                이 날짜를 기준으로 계산했어요
+                {DATE_SOURCE_LABEL[state.meeting.meetingDateSource]}
               </label>
               <input
                 id="meeting-date"
                 className="anchor-input"
                 type="date"
-                value={meetingDate}
-                onChange={(e) => setMeetingDate(e.target.value)}
+                value={shownDate}
+                onChange={(e) => setPickedDate(e.target.value)}
               />
               <button className="button button--quiet" type="button" onClick={submit}>
                 다시 계산
               </button>
+              {/* 원문 표현과 실제 기준일이 다르면 그 사실을 남깁니다 */}
+              {state.meeting.meetingDateRaw && state.meeting.meetingDateSource !== 'document' && (
+                <span className="hint">원문에는 “{state.meeting.meetingDateRaw}”라고 적혀 있어요.</span>
+              )}
             </div>
 
             <details className="excluded">

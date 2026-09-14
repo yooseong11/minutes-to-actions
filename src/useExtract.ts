@@ -55,7 +55,11 @@ export function useExtract() {
     setState({ status: 'idle' })
   }, [])
 
-  const extract = useCallback(async (text: string, meetingDate: string | null) => {
+  /**
+   * @param meetingDate  사용자가 날짜칸을 직접 고쳤을 때만 값. 안 고쳤으면 null
+   * @param fallbackDate 오늘. 원문에도 날짜가 없을 때만 서버가 쓴다
+   */
+  const extract = useCallback(async (text: string, meetingDate: string | null, fallbackDate: string | null) => {
     const trimmed = text.trim()
     if (!trimmed) {
       setState({ status: 'error', message: FALLBACK.empty })
@@ -77,7 +81,7 @@ export function useExtract() {
       const response = await fetch('/api/extract', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ text: trimmed, meetingDate }),
+        body: JSON.stringify({ text: trimmed, meetingDate, fallbackDate }),
         signal: controller.signal,
       })
 

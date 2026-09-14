@@ -11,7 +11,7 @@
  *
  * 순수 함수. LLM 호출 없음.
  */
-import { parseDue, type DueMethod } from './date.js'
+import { parseAbsolute, parseDue, toEpoch, type DueMethod } from './date.js'
 import {
   assigneeInQuote,
   findDuplicateNames,
@@ -39,9 +39,15 @@ export interface ProcessedItem extends RawItem {
   confidence: Confidence
 }
 
+/** 기준일을 어디서 가져왔는가. 화면이 문구를 갈라 쓴다 */
+export type MeetingDateSource = 'user' | 'document' | 'fallback' | 'none'
+
 export interface ProcessedMeeting {
+  /** 기한 환산에 실제로 쓴 날짜 */
   meetingDate: DateKey | null
+  /** 원문에 적혀 있던 표현. 환산 여부와 무관하게 그대로 내보낸다 */
   meetingDateRaw: string | null
+  meetingDateSource: MeetingDateSource
   attendees: RawAttendee[]
   items: ProcessedItem[]
   /** 인용문이 원문에 없어 탈락한 항목. 감추지 않고 내보낸다 */
@@ -80,12 +86,45 @@ function normalizeQuote(quote: string | null | undefined): string | null {
   return quote.replace(/\s+/g, ' ').trim()
 }
 
+/**
+ * 기준일 결정. 출처가 셋이라 우선순위를 여기 한 곳에만 적는다.
+ *
+ *   1) userDate     사용자가 화면에서 직접 고른 날짜. 사람이 고친 것이므로 무조건 이긴다
+ *   2) 원문         AI가 발췌한 meetingDateRaw를 코드가 환산. 회의록 자신이 말하는 날짜
+ *   3) fallbackDate 프론트가 채워 보낸 오늘. 원문에 날짜가 없을 때만
+ *
+ * 2)가 없으면 조용히 3)으로 내려가는 것이 아니라, 어느 쪽을 썼는지 source로 드러낸다.
+ */
+export function resolveMeetingDate(
+  userDate: DateKey | null,
+  meetingDateRaw: string | null,
+  fallbackDate: DateKey | null,
+): { date: DateKey | null; source: MeetingDateSource } {
+  if (userDate != null && toEpoch(userDate) != null) return { date: userDate, source: 'user' }
+
+  const base = fallbackDate != null && toEpoch(fallbackDate) != null ? fallbackDate : null
+  const fromDocument = parseAbsolute(meetingDateRaw, base)
+  if (fromDocument) return { date: fromDocument, source: 'document' }
+
+  if (base) return { date: base, source: 'fallback' }
+  return { date: null, source: 'none' }
+}
+
 export function postprocess(
   raw: RawExtraction,
   sourceText: string,
-  meetingDate: DateKey | null,
+  /** 사용자가 화면에서 직접 고른 날짜. 안 골랐으면 null */
+  userDate: DateKey | null,
+  /** 프론트가 채워 보낸 오늘. 원문에도 날짜가 없을 때만 쓴다 */
+  fallbackDate: DateKey | null = null,
 ): ProcessedMeeting {
   const attendees = Array.isArray(raw.attendeesRaw) ? raw.attendeesRaw : []
+  const meetingDateRaw = raw.meetingDateRaw ?? null
+  const { date: meetingDate, source: meetingDateSource } = resolveMeetingDate(
+    userDate,
+    meetingDateRaw,
+    fallbackDate,
+  )
 
   // 1) 환각 탐지 — 여기서 떨어진 항목은 아래 단계를 타지 않는다
   const { verified, rejected } = verifyItems(raw.items, sourceText)
@@ -154,7 +193,8 @@ export function postprocess(
 
   return {
     meetingDate,
-    meetingDateRaw: raw.meetingDateRaw ?? null,
+    meetingDateRaw,
+    meetingDateSource,
     attendees,
     items,
     rejected,

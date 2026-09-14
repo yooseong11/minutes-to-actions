@@ -29,7 +29,10 @@ const MAX_TEXT = 20_000
 
 interface ExtractBody {
   text: string
+  /** 사용자가 화면에서 직접 고른 회의 날짜. 안 골랐으면 null */
   meetingDate: string | null
+  /** 프론트가 채워 보낸 오늘. 원문에도 날짜가 없을 때만 쓴다 */
+  fallbackDate: string | null
 }
 
 function parseBody(raw: unknown): ExtractBody | null {
@@ -46,8 +49,13 @@ function parseBody(raw: unknown): ExtractBody | null {
   const b = body as Record<string, unknown>
   if (typeof b.text !== 'string' || !b.text.trim() || b.text.length > MAX_TEXT) return null
   if (b.meetingDate != null && (typeof b.meetingDate !== 'string' || !DATE_KEY.test(b.meetingDate))) return null
+  if (b.fallbackDate != null && (typeof b.fallbackDate !== 'string' || !DATE_KEY.test(b.fallbackDate))) return null
 
-  return { text: b.text, meetingDate: (b.meetingDate as string | undefined) ?? null }
+  return {
+    text: b.text,
+    meetingDate: (b.meetingDate as string | undefined) ?? null,
+    fallbackDate: (b.fallbackDate as string | undefined) ?? null,
+  }
 }
 
 /** AI 응답이 스키마 모양인지 최소한만 본다. 내용 검증은 postprocess가 한다 */
@@ -95,6 +103,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
         model: process.env.OPENAI_MODEL || 'gpt-4.1-mini',
         store: false,
         instructions: SYSTEM_PROMPT,
+        // 사용자가 고른 날짜만 넘긴다. 오늘 날짜를 '회의 날짜'라고 알려주면
+        // AI가 원문 대신 그걸 meetingDateRaw로 베껴 쓴다.
         input: buildUserMessage(body.text, body.meetingDate),
         max_output_tokens: 8000,
         text: { format: { type: 'json_schema', name: 'meeting_extraction', strict: true, schema: EXTRACTION_SCHEMA } },
@@ -144,7 +154,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     }
 
     // 여기서부터가 이 프로젝트의 본체 — 코드가 검사하고 계산하고 대조한다
-    const meeting: ProcessedMeeting = postprocess(raw, body.text, body.meetingDate)
+    // 기준일 우선순위(사용자 지정 > 원문 > 오늘)는 postprocess 한 곳에만 있다
+    const meeting: ProcessedMeeting = postprocess(raw, body.text, body.meetingDate, body.fallbackDate)
 
     res.status(200).json(meeting)
   } catch (error) {

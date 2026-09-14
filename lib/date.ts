@@ -52,12 +52,16 @@ function endOfMonth(dateKey: string | null): DateKey | null {
 
 /**
  * 절대 날짜 표현을 해석한다.
- * "11월 2일", "11/2", "2026-11-02", "11.2"
+ * "11월 2일", "11/2", "2026-11-02", "11.2", "2026년 11월 2일"
  * 연도가 없으면 base의 연도를 쓰되, 결과가 base보다 6개월 이상 과거면 다음 해로 본다.
  */
 export function parseAbsolute(raw: unknown, baseDateKey: string | null): DateKey | null {
   if (typeof raw !== 'string') return null
   const text = raw.trim()
+
+  // 연도가 적혀 있으면 base보다 먼저다. "2025년 11월 2일"을 base 연도로 덮어쓰면 안 된다.
+  const korean = text.match(/(\d{4})\s*년\s*(\d{1,2})\s*월\s*(\d{1,2})\s*일?/)
+  if (korean) return toDateKey(Date.UTC(+korean[1], +korean[2] - 1, +korean[3]))
 
   const iso = text.match(/(\d{4})[-.\/](\d{1,2})[-.\/](\d{1,2})/)
   if (iso) return toDateKey(Date.UTC(+iso[1], +iso[2] - 1, +iso[3]))

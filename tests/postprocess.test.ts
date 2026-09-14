@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { postprocess } from '../lib/postprocess.js'
+import { postprocess, resolveMeetingDate } from '../lib/postprocess.js'
 import type { RawExtraction, RawItem } from '../lib/types.js'
 
 // 실제 샘플 05 원문 일부
@@ -178,4 +178,69 @@ test('번복된 결정은 항목 하나로 접힌다', () => {
   assert.equal(out.items.length, 1)
   assert.equal(out.items[0]?.type, 'open')
   assert.ok(out.items[0]?.reviewReasons.includes('superseded'))
+})
+
+// --- 기준일 우선순위 (사용자 지정 > 원문 > 오늘) ---
+//
+// 여기까지 테스트가 없어서 기한이 전부 일주일씩 밀린 채로 44개가 통과했다.
+// 원인은 postprocess에 meetingDate를 "항상" 넘겨준 것. 안 넘기는 경우를 만든다.
+
+test('사용자가 날짜를 고르면 원문보다 사용자가 이긴다', () => {
+  assert.deepEqual(resolveMeetingDate('2026-09-20', '9/13 금', '2026-09-14'), {
+    date: '2026-09-20',
+    source: 'user',
+  })
+})
+
+test('사용자가 안 골랐으면 원문 날짜가 오늘을 이긴다', () => {
+  assert.deepEqual(resolveMeetingDate(null, '9/13 금', '2026-09-14'), {
+    date: '2026-09-13',
+    source: 'document',
+  })
+})
+
+test('원문에 날짜가 없을 때만 오늘로 내려간다', () => {
+  assert.deepEqual(resolveMeetingDate(null, null, '2026-09-14'), {
+    date: '2026-09-14',
+    source: 'fallback',
+  })
+})
+
+test('셋 다 없으면 기준일이 없다고 말한다 (조용히 오늘로 때우지 않는다)', () => {
+  assert.deepEqual(resolveMeetingDate(null, null, null), { date: null, source: 'none' })
+})
+
+test('연도가 적힌 원문 날짜는 오늘의 연도로 덮이지 않는다', () => {
+  assert.deepEqual(resolveMeetingDate(null, '2025년 11월 2일', '2026-09-14'), {
+    date: '2025-11-02',
+    source: 'document',
+  })
+})
+
+test('화면이 오늘만 보내도 기한은 원문 날짜(9/13) 기준으로 환산된다', () => {
+  const out = postprocess(
+    fake([
+      item({
+        content: '견적 취합',
+        assigneeRaw: '최영호',
+        dueDateRaw: '이번 주 안에',
+        quote: '프린터 토너 재고 소진 임박 → 발주. 최영호.',
+      }),
+    ]),
+    SOURCE,
+    null, // 사용자는 날짜를 고르지 않았다
+    '2026-09-14', // 프론트가 채운 오늘 (일요일)
+  )
+
+  assert.equal(out.meetingDate, '2026-09-13')
+  assert.equal(out.meetingDateSource, 'document')
+  // 오늘(9/14 월) 기준이면 9/20이 나온다. 원문(9/13 일) 기준이면 그 주의 끝인 9/13.
+  assert.equal(out.items[0]?.due, '2026-09-13')
+})
+
+test('원문 표현은 기준일로 뭘 썼든 그대로 내보낸다', () => {
+  const out = postprocess(fake([]), SOURCE, '2026-09-20', '2026-09-14')
+  assert.equal(out.meetingDateRaw, '9/13 금')
+  assert.equal(out.meetingDate, '2026-09-20')
+  assert.equal(out.meetingDateSource, 'user')
 })
