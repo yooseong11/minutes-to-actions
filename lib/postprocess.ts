@@ -48,6 +48,14 @@ export interface ProcessedMeeting {
   /** 원문에 적혀 있던 표현. 환산 여부와 무관하게 그대로 내보낸다 */
   meetingDateRaw: string | null
   meetingDateSource: MeetingDateSource
+  /**
+   * TPO — 시각·장소·목적. AI 발췌를 그대로 흘려보낸다.
+   * 환산할 것도 대조할 것도 없어서 코드가 손대지 않는다.
+   * 날짜와 달리 사용자 지정·기본값이 없으므로 source도 없다 — 원문에 있거나 없거나 둘 뿐.
+   */
+  meetingTimeRaw: string | null
+  meetingPlaceRaw: string | null
+  purposeRaw: string | null
   attendees: RawAttendee[]
   items: ProcessedItem[]
   /** 인용문이 원문에 없어 탈락한 항목. 감추지 않고 내보낸다 */
@@ -79,6 +87,13 @@ const CODE_OWNED = new Set<ReviewReason>([
   'blocked',
   'superseded',
 ])
+
+/** 발췌 칸 정리 — 빈 문자열·공백뿐인 값은 null로 접는다 */
+function blankToNull(value: string | null | undefined): string | null {
+  if (typeof value !== 'string') return null
+  const trimmed = value.trim()
+  return trimmed ? trimmed : null
+}
 
 /** 인용문 비교용 — 공백만 접는다 */
 function normalizeQuote(quote: string | null | undefined): string | null {
@@ -195,6 +210,10 @@ export function postprocess(
     meetingDate,
     meetingDateRaw,
     meetingDateSource,
+    // 발췌 그대로. 빈 문자열은 null과 같이 취급한다 — 화면이 두 경우를 나눌 이유가 없다
+    meetingTimeRaw: blankToNull(raw.meetingTimeRaw),
+    meetingPlaceRaw: blankToNull(raw.meetingPlaceRaw),
+    purposeRaw: blankToNull(raw.purposeRaw),
     attendees,
     items,
     rejected,

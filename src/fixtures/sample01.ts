@@ -11,6 +11,11 @@
  *
  * 스키마가 바뀌면 `tsc`가 여기서 먼저 터집니다. 타입을 박아 둔 이유입니다.
  * 다시 만들려면 `postprocess(raw, 원문, null, '2026-09-14')`의 결과로 갈아끼우면 됩니다.
+ *
+ * TPO 세 칸(`meetingTimeRaw`·`meetingPlaceRaw`·`purposeRaw`)은 실제 추출이 아니라
+ * **원문에서 손으로 옮긴 값**입니다. 코드가 계산하지 않고 그대로 통과시키는 칸이라
+ * 화면 확인에는 같은 값이지만, 프롬프트가 저 셋을 잘 뽑는지는 이 파일로 알 수 없습니다.
+ * 그건 회귀 5차 측정에서 실제 추출로 확인할 일입니다.
  */
 import type { ProcessedMeeting } from '../../lib/postprocess.js'
 
@@ -20,6 +25,11 @@ export const SAMPLE_01: ProcessedMeeting = {
   "meetingDate": "2026-09-08",
   "meetingDateRaw": "2026-09-08",
   "meetingDateSource": "document",
+  // TPO 세 칸은 발췌를 그대로 흘려보내는 값이라 손으로 채웠습니다 (재추출 안 함).
+  // 원문 둘째 줄 "2026-09-08 (월) 10:00 / 대회의실"과 첫 줄 제목에서 그대로 옮긴 것입니다.
+  "meetingTimeRaw": "10:00",
+  "meetingPlaceRaw": "대회의실",
+  "purposeRaw": "주간 업무회의",
   "attendees": [
     {
       "nameRaw": "박팀장",

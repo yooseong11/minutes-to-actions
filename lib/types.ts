@@ -46,6 +46,12 @@ export interface RawItem {
 
 export interface RawExtraction {
   meetingDateRaw: string | null
+  /** "10:00" / "오전 10시" — 원문 그대로. 환산하지 않는다 */
+  meetingTimeRaw: string | null
+  /** "대회의실" / "온라인(줌)" — 원문 그대로 */
+  meetingPlaceRaw: string | null
+  /** 회의 목적. 제목 줄이나 "안건:" 줄에서 발췌. 지어내지 않는다 */
+  purposeRaw: string | null
   attendeesRaw: RawAttendee[]
   items: RawItem[]
 }

@@ -11,15 +11,20 @@ export const SYSTEM_PROMPT = `당신은 회의록에서 항목을 발췌하는 �
 
 이 순서를 지키십시오. 순서를 건너뛰면 결과가 어긋납니다.
 
-0단계. 회의 날짜를 찾습니다.
+0단계. 회의 머리말을 찾습니다 — 날짜 · 시각 · 장소 · 목적.
 1단계. 참석자를 뽑습니다.
 2단계. **제외 대상을 먼저 걸러냅니다.** 항목으로 만들기 전에 버립니다.
 3단계. 남은 것만 항목으로 만듭니다.
 4단계. 항목마다 검토 사유 목록 10개를 처음부터 끝까지 훑으며 해당하는 것을 모두 넣습니다.
 
-## 0단계 — 회의 날짜
+## 0단계 — 회의 머리말 (날짜 · 시각 · 장소 · 목적)
 
-본문 머리에 적힌 회의 날짜를 **원문 표현 그대로** meetingDateRaw에 넣습니다.
+본문 머리에 붙는 네 칸입니다. **네 칸 모두 원문 표현 그대로 발췌합니다.**
+형식을 바꾸거나, 다듬거나, 없는 것을 지어내지 마십시오.
+본문에 없는 칸은 null입니다. 빈 문자열을 넣지 마십시오.
+
+### meetingDateRaw — 회의 날짜
+
 "2026-09-08 (월) 10:00" → meetingDateRaw: "2026-09-08"
 "9/13 금 오전"          → meetingDateRaw: "9/13"
 "2026년 9월 8일"         → meetingDateRaw: "2026년 9월 8일"
@@ -29,6 +34,37 @@ export const SYSTEM_PROMPT = `당신은 회의록에서 항목을 발췌하는 �
 - **"다음 회의: 9/15(월)"는 회의 날짜가 아닙니다.** 다음 회의 일정입니다.
 - 본문의 모든 기한이 이 날짜를 기준으로 환산됩니다. 이것을 비우면
   "이번 주 안에", "담주 화요일"이 전부 환산 실패로 떨어집니다.
+
+### meetingTimeRaw — 시각
+
+"2026-09-08 (월) 10:00 / 대회의실" → meetingTimeRaw: "10:00"
+"9/13 금 오전"                     → meetingTimeRaw: "오전"
+"14:00~15:30"                      → meetingTimeRaw: "14:00~15:30"
+
+- 날짜 줄에 시각이 붙어 있으면 시각 부분만 떼어 옮깁니다.
+- 24시간제로 고치거나 오전/오후를 환산하지 마십시오. 적힌 그대로입니다.
+- 시각이 없으면 null입니다. "오전"으로 추측하지 마십시오.
+
+### meetingPlaceRaw — 장소
+
+"2026-09-08 (월) 10:00 / 대회의실" → meetingPlaceRaw: "대회의실"
+"장소: 3층 소회의실"                → meetingPlaceRaw: "3층 소회의실"
+"줌으로 진행"                       → meetingPlaceRaw: "줌"
+
+- 회의가 열린 장소입니다. 회의 중에 언급된 다른 장소(식당, 거래처)가 아닙니다.
+- 없으면 null입니다.
+
+### purposeRaw — 목적
+
+회의가 무엇을 하려고 열렸는지입니다. 다음 순서로 찾습니다.
+
+1. 문서 제목 줄 — "주간 업무회의" → purposeRaw: "주간 업무회의"
+2. "안건:" / "목적:" / "주제:" 줄 — 그 줄의 내용을 그대로
+3. 둘 다 없으면 null
+
+- **본문을 읽고 요약해서 만들지 마십시오.** 적혀 있는 것만 옮깁니다.
+  회의 내용으로 미루어 목적을 지어내면, 원문에 없는 문장이 회의록에 남습니다.
+- 논의된 안건을 나열하지 마십시오. 그것은 3단계 항목이 할 일입니다.
 
 ## 1단계 — 참석자
 
@@ -137,9 +173,12 @@ const REVIEW_REASONS = [
 export const EXTRACTION_SCHEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['meetingDateRaw', 'attendeesRaw', 'items'],
+  required: ['meetingDateRaw', 'meetingTimeRaw', 'meetingPlaceRaw', 'purposeRaw', 'attendeesRaw', 'items'],
   properties: {
     meetingDateRaw: { type: ['string', 'null'] },
+    meetingTimeRaw: { type: ['string', 'null'] },
+    meetingPlaceRaw: { type: ['string', 'null'] },
+    purposeRaw: { type: ['string', 'null'] },
     attendeesRaw: {
       type: 'array',
       items: {

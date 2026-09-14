@@ -16,12 +16,17 @@ AI가 계산하면 틀리고, 틀려도 티가 안 납니다. AI가 문장을 �
 ```
 당신은 회의록에서 항목을 발췌하는 도구입니다. 요약하지 않습니다.
 
-## 0단계 — 회의 날짜
+## 0단계 — 회의 머리말 (날짜 · 시각 · 장소 · 목적)
 
-본문 머리에 적힌 회의 날짜를 **원문 표현 그대로** meetingDateRaw에 넣습니다.
-형식을 바꾸지 말고, 요일·시각·장소는 빼고 날짜 부분만 옮깁니다.
-본문에 없으면 null. 오늘 날짜로 채우지 마십시오.
-"다음 회의: 9/15(월)"는 회의 날짜가 아닙니다.
+네 칸 모두 **원문 표현 그대로** 발췌합니다. 없으면 null. 지어내지 마십시오.
+
+meetingDateRaw  형식을 바꾸지 말고, 요일·시각·장소는 빼고 날짜만.
+                오늘 날짜로 채우지 마십시오.
+                "다음 회의: 9/15(월)"는 회의 날짜가 아닙니다.
+meetingTimeRaw  "10:00" / "오전" / "14:00~15:30". 24시간제로 환산하지 마십시오.
+meetingPlaceRaw 회의가 열린 장소. 회의 중 언급된 다른 장소가 아닙니다.
+purposeRaw      제목 줄 → "안건:"·"목적:" 줄 순서로 찾습니다.
+                본문을 읽고 요약해서 만들지 마십시오. 적혀 있는 것만.
 
 ## 원칙
 
@@ -115,9 +120,13 @@ AI가 계산하면 틀리고, 틀려도 티가 안 납니다. AI가 문장을 �
 {
   type: "object",
   additionalProperties: false,
-  required: ["meetingDateRaw", "attendeesRaw", "items"],
+  required: ["meetingDateRaw", "meetingTimeRaw", "meetingPlaceRaw",
+             "purposeRaw", "attendeesRaw", "items"],
   properties: {
-    meetingDateRaw: { type: ["string", "null"] },   // 본문에 적힌 그대로
+    meetingDateRaw:  { type: ["string", "null"] },  // 본문에 적힌 그대로
+    meetingTimeRaw:  { type: ["string", "null"] },  // "10:00" / "오전"
+    meetingPlaceRaw: { type: ["string", "null"] },  // "대회의실"
+    purposeRaw:      { type: ["string", "null"] },  // "주간 업무회의"
     attendeesRaw: {
       type: "array",
       items: {
@@ -166,6 +175,19 @@ AI가 계산하면 틀리고, 틀려도 티가 안 납니다. AI가 문장을 �
 ```
 
 ### 변경 이력
+
+**5차 — TPO 필드 추가 (2026-09-14)**
+
+- `meetingTimeRaw` · `meetingPlaceRaw` · `purposeRaw` 추가 — 회의록 5대 필수 요소 중
+  TPO 칸이 화면에 "아직 안 뽑음"으로 비어 있었습니다. 셋 다 **발췌**라
+  "AI는 발췌만" 원칙이 깨지지 않습니다
+- **0단계를 "회의 날짜" → "회의 머리말"로 넓히고 칸마다 지시문을 따로 썼습니다.**
+  4차에서 배운 것을 그대로 적용한 것입니다 — 스키마에만 넣으면 null이 옵니다
+- `purposeRaw`에 "요약해서 만들지 마십시오"를 명시 — 목적은 회의 내용에서
+  그럴듯하게 지어낼 수 있는 칸이라, 다른 칸보다 환각 위험이 큽니다.
+  제목 줄 → "안건:" 줄 순서로 **찾는 위치를 고정**했습니다
+- 코드는 판정하지 않고 통과만 시킵니다(`blankToNull`로 빈 문자열만 null로 접음).
+  환산도 대조도 없으므로 `meetingDateSource` 같은 출처 표시도 없습니다
 
 **4차 — 기준일 버그 수정 후 (2026-09-14)**
 

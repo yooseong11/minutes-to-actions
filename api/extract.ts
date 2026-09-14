@@ -100,7 +100,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: process.env.OPENAI_MODEL || 'gpt-4.1-mini',
+        // 기본값은 Vercel에 OPENAI_MODEL을 안 넣었을 때만 쓰인다
+        model: process.env.OPENAI_MODEL || 'gpt-6-astra',
         store: false,
         instructions: SYSTEM_PROMPT,
         // 사용자가 고른 날짜만 넘긴다. 오늘 날짜를 '회의 날짜'라고 알려주면

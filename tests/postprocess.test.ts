@@ -28,6 +28,9 @@ const item = (over: Partial<RawItem>): RawItem => ({
 // LLM 호출 없이, 가짜 AI 응답으로 후처리만 검증한다
 const fake = (items: RawItem[]): RawExtraction => ({
   meetingDateRaw: '9/13 금',
+  meetingTimeRaw: '오전 10시',
+  meetingPlaceRaw: '대회의실',
+  purposeRaw: '주간 업무회의',
   attendeesRaw: [
     { nameRaw: '이수현', contextRaw: null },
     { nameRaw: '최영호', contextRaw: null },
@@ -243,4 +246,38 @@ test('원문 표현은 기준일로 뭘 썼든 그대로 내보낸다', () => {
   assert.equal(out.meetingDateRaw, '9/13 금')
   assert.equal(out.meetingDate, '2026-09-20')
   assert.equal(out.meetingDateSource, 'user')
+})
+
+// --- TPO (시각 · 장소 · 목적) -------------------------------------------------
+// 코드가 계산하지 않고 그대로 흘려보내는 칸이다. 검증할 것은 두 가지뿐이다.
+//   1) 값이 손상되지 않고 통과하는가
+//   2) 빈 값이 화면까지 빈 문자열로 흘러가지 않는가
+
+test('TPO 세 칸은 발췌 그대로 통과한다', () => {
+  const out = postprocess(fake([]), SOURCE, null, '2026-09-14')
+  assert.equal(out.meetingTimeRaw, '오전 10시')
+  assert.equal(out.meetingPlaceRaw, '대회의실')
+  assert.equal(out.purposeRaw, '주간 업무회의')
+})
+
+test('TPO — 기준일을 사용자가 고쳐도 셋은 영향받지 않는다', () => {
+  const out = postprocess(fake([]), SOURCE, '2026-09-20', '2026-09-14')
+  assert.equal(out.meetingDateSource, 'user')
+  assert.equal(out.meetingTimeRaw, '오전 10시')
+  assert.equal(out.meetingPlaceRaw, '대회의실')
+})
+
+test('TPO — 빈 문자열과 공백은 null로 접힌다', () => {
+  const raw = { ...fake([]), meetingTimeRaw: '', meetingPlaceRaw: '   ', purposeRaw: null }
+  const out = postprocess(raw, SOURCE, null, '2026-09-14')
+  // 빈 문자열이 그대로 통과하면 화면이 "원문에 없음" 대신 빈 칸을 그린다
+  assert.equal(out.meetingTimeRaw, null)
+  assert.equal(out.meetingPlaceRaw, null)
+  assert.equal(out.purposeRaw, null)
+})
+
+test('TPO — 앞뒤 공백은 다듬는다', () => {
+  const raw = { ...fake([]), meetingPlaceRaw: '  3층 소회의실  ' }
+  const out = postprocess(raw, SOURCE, null, '2026-09-14')
+  assert.equal(out.meetingPlaceRaw, '3층 소회의실')
 })
