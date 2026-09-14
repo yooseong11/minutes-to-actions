@@ -1,7 +1,9 @@
 /* 원시 팔레트를 직접 쓰지 않습니다. 의미 토큰만 참조합니다. */
 
 .page {
-  max-width: var(--width-content);
+  /* 720px(--width-content)은 본문 한 단의 읽기 폭입니다. 안건 줄은 오른쪽에
+     기한·사유가 붙으므로 그보다 넓어야 두 덩어리가 안 부딪힙니다. */
+  max-width: 960px;
   margin: 0 auto;
   padding: var(--space-12) var(--space-6);
   display: flex;
@@ -582,53 +584,171 @@ button.chip[aria-pressed="true"] { border-color: var(--color-accent-border); bac
 
 .agenda-summary--empty { color: var(--color-text-subtle); }
 
-.agenda-item { display: flex; align-items: flex-start; gap: var(--space-3); min-width: 0; }
-.agenda-item > .item { flex: 1 1 auto; min-width: 0; }
+/* ---- 한 색으로 통일 -------------------------------------------------------
+ *
+ * 화면에 초록(강조)·노랑(경고)·빨강(삭제) 세 계열이 흩어져 있었습니다.
+ * 색이 셋이면 "어느 색이 더 급한가"를 매번 해석해야 합니다.
+ *
+ * 그래서 **강조색 하나 + 무채색**으로 줄였습니다.
+ *   - 사람이 손봐야 하는 것 → 강조색(emerald)
+ *   - 읽고 넘어가면 되는 것 → 회색
+ * 위계는 색이 아니라 **채우기 / 테두리 / 글씨**로 냅니다.
+ *
+ * tokens.css의 warn·danger 토큰은 지우지 않았습니다. 되돌리려면 아래 블록만
+ * 지우면 됩니다 — 토큰을 지우면 되돌릴 때 팔레트를 다시 만들어야 합니다.
+ */
 
-/* 분류 라벨. 섹션 제목이 하던 말을 항목마다 합니다.
-   색을 새로 만들지 않고 기존 토큰만 씁니다 — 결정은 강조, 할 일은 기본,
-   미결은 점선으로 "아직 안 정해짐"을 테두리로 말합니다. */
-.type-tag {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 3.5rem;
-  height: var(--space-6);
-  margin-top: var(--space-4);
-  padding: 0 var(--space-3);
-  border: var(--border-thin) solid var(--color-border);
-  border-radius: var(--radius-full);
-  background: var(--color-surface);
-  color: var(--color-text-muted);
-  font-size: var(--text-xs);
-  line-height: var(--leading-xs);
-  font-weight: var(--weight-medium);
-  white-space: nowrap;
-}
-
-.type-tag--decision {
+/* 검증 안 된 칸 경고 — 노랑에서 강조색 테두리로 */
+.doc-unverified {
   background: var(--color-accent-subtle);
   border-color: var(--color-accent-border);
   color: var(--color-accent-text);
 }
 
-.type-tag--action {
+/* 배지 두 종류. 색이 아니라 채우기로 가릅니다 */
+.badge--ask {
+  background: var(--color-accent-subtle);
+  border-color: var(--color-accent-border);
+  color: var(--color-accent-text);
+}
+.badge--warn {
+  background: transparent;
   border-color: var(--color-border-strong);
-  color: var(--color-text);
+  color: var(--color-text-muted);
 }
 
-.type-tag--open {
+/* 삭제도 무채색입니다. 빨강은 이 화면에서 유일하게 되돌릴 수 있는 동작에
+   쓰이고 있었습니다 — 「마지막 변경 되돌리기」가 바로 위에 있습니다. */
+.button--danger {
   background: transparent;
-  border-style: dashed;
+  border-color: var(--color-border-strong);
+  color: var(--color-text-muted);
+}
+.button--danger:hover, .button--danger:active {
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+}
+.icon-button--danger:hover { background: var(--color-surface); color: var(--color-text); }
+
+/* ---- 항목 = 한 줄 ---------------------------------------------------------
+ *
+ * 카드를 걷어낸 자리입니다. 손댈 게 없는 항목은 아무 장식이 없습니다.
+ * "배지는 예외에만 단다"를 상자에도 적용한 것입니다 — 전부 똑같이 생기면
+ * 손볼 항목이 어디인지 안 보입니다.
+ */
+.rows { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
+
+.row { border-top: var(--border-thin) solid var(--color-divider); }
+.row:first-child { border-top: 0; }
+
+.row-line {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-2) var(--space-1);
+}
+
+/* 사람이 채워야 하는 줄 — **줄 자체에는 아무 표시도 하지 않습니다.**
+ *
+ * 처음엔 배경을 깔았고(6줄 중 4줄이 초록이 됐습니다), 다음엔 왼쪽 막대로
+ * 줄였는데, 그것도 과했습니다. 사유 글씨가 이미 오른쪽 끝에서 말하고 있어서
+ * 줄까지 칠하면 같은 말을 두 번 하는 것입니다.
+ *
+ * 색은 화면에서 **사유 글씨 한 군데**에만 있습니다. 그래서 눈에 걸립니다.
+ */
+
+.row--editing { padding: var(--space-3) var(--space-1); }
+
+/* 취소선 줄은 사유 색까지 죽입니다. 번복된 항목에 "확인하세요"를 띄우면 헷갈립니다 */
+.row .superseded ~ .row-meta .row-flag { color: var(--color-text-subtle); }
+
+.row-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-base);
+  overflow-wrap: anywhere;
+}
+
+.row-who { font-weight: var(--weight-medium); }
+.row-who--empty { color: var(--color-text-subtle); font-weight: var(--weight-regular); }
+
+.row-meta {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
   color: var(--color-text-subtle);
 }
 
-/* 좁은 화면에서는 라벨을 항목 위로 올립니다. 옆에 두면 카드가 더 좁아집니다 */
+.row-due { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* 사유는 상자 없는 글씨입니다. 배지를 달면 줄이 다시 카드가 됩니다 */
+.row-flag { white-space: nowrap; }
+.row-flag--ask { color: var(--color-accent-text); font-weight: var(--weight-medium); }
+
+/* 항상 보이되 조용합니다. hover로만 띄우면 터치 화면에서 못 찾습니다 */
+.row-actions { flex: 0 0 auto; display: flex; gap: var(--space-1); align-self: center; }
+
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-6);
+  height: var(--space-6);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-subtle);
+  font-size: var(--text-sm);
+  line-height: 1;
+  cursor: pointer;
+}
+.icon-button:hover { background: var(--color-surface); color: var(--color-text); }
+.icon { width: 14px; height: 14px; display: block; }
+.icon-button--danger:hover { background: var(--color-danger-bg); color: var(--color-danger-text); }
+
+/* 원문 근거는 접어 둡니다. 대부분 content와 거의 같은 문장이라 두 번 읽힙니다 */
+.row-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-1) var(--space-3) calc(3.4rem + var(--space-3));
+}
+
+.row-quote {
+  margin: 0;
+  padding-left: var(--space-3);
+  border-left: 2px solid var(--color-border-strong);
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  line-height: var(--leading-sm);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.row-note {
+  color: var(--color-text-subtle);
+  font-size: var(--text-xs);
+  line-height: var(--leading-sm);
+  overflow-wrap: anywhere;
+}
+
+.button--add { align-self: flex-start; height: var(--control-height-sm); }
+
+/* 좁은 화면에서는 기한·사유를 아래 줄로 내립니다. 옆에 두면 내용이 두 글자씩 끊깁니다 */
 @media (max-width: 540px) {
-  .agenda-item { flex-direction: column; gap: var(--space-2); }
-  .type-tag { margin-top: 0; }
   .agenda { padding: var(--space-3); }
+  .row-line { flex-wrap: wrap; row-gap: var(--space-1); }
+  .row-text { flex-basis: 100%; order: 2; }
+  .row-meta { order: 3; margin-left: calc(3.4rem + var(--space-3)); }
+  .row-actions { margin-left: auto; }
+  .icon-button { width: var(--control-height-sm); height: var(--control-height-sm); }
+  .row-detail { padding-left: var(--space-1); }
 }
 
 /* 한 열로 쌓이면 스크롤이 깁니다. 지금 어느 칸을 읽고 있는지 잃지 않도록

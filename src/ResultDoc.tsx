@@ -1,4 +1,4 @@
-import { ITEM_TYPE, SECTIONS } from '../lib/labels.js'
+import { SECTIONS } from '../lib/labels.js'
 import type { MeetingDateSource } from '../lib/postprocess.js'
 import type { EditableItem, EditableMeeting, ItemPatch } from '../lib/edit.js'
 import ItemCard from './ItemCard.js'
@@ -12,6 +12,9 @@ import ItemCard from './ItemCard.js'
  *   Done    결정사항
  *   WILL DO 누가 언제까지 무엇을
  *   TBD     논의가 끝나지 않은 아젠다
+ *
+ * **항목은 카드가 아니라 한 줄입니다.** 카드는 항목이 평면 목록이던 시절의 흔적이고,
+ * 안건이 경계를 그어주는 지금은 상자가 한 겹 남습니다. `ItemCard.tsx` 주석 참조.
  *
  * **4.5에서 바뀐 것 — Done·WillDo·TBD를 세 칸으로 가르지 않고 안건 밑으로 넣었습니다.**
  * 세 칸으로 가르면 "한 달치 질문 분류"가 무슨 질문인지 알 수 없게 됩니다. 답이
@@ -142,24 +145,22 @@ function Agenda({
       {items.length === 0 ? (
         <p className="doc-empty">이 안건에 남은 항목이 없습니다.</p>
       ) : (
-        <div className="items">
+        /* 항목은 카드가 아니라 줄입니다. 목록이니 ul로 냅니다 — 스크린리더가 개수를 읽습니다 */
+        <ul className="rows">
           {items.map((i) => (
-            <div className="agenda-item" key={i.id}>
-              {/* 분류는 섹션 제목이 없어졌으므로 항목마다 답니다 */}
-              <span className={`type-tag type-tag--${i.type}`}>{ITEM_TYPE[i.type]}</span>
-              <ItemCard
-                item={i}
-                attendees={attendees}
-                onEdit={(patch) => onEdit(i.id, patch)}
-                onDelete={() => onDelete(i.id)}
-              />
-            </div>
+            <ItemCard
+              key={i.id}
+              item={i}
+              attendees={attendees}
+              onEdit={(patch) => onEdit(i.id, patch)}
+              onDelete={() => onDelete(i.id)}
+            />
           ))}
-        </div>
+        </ul>
       )}
 
-      <button type="button" className="button button--add" onClick={onAdd}>
-        + 이 안건에 항목 추가
+      <button type="button" className="button button--quiet button--add" onClick={onAdd}>
+        + 항목 추가
       </button>
     </section>
   )
