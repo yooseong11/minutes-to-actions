@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { quoteExists, verifyItemQuotes, verifyItems } from '../lib/verify'
-import type { RawItem } from '../lib/types'
+import { quoteExists, verifyItemQuotes, verifyItems } from '../lib/verify.js'
+import type { RawItem } from '../lib/types.js'
 
 const SOURCE = `비품/총무 건 (9/13 금 오전 짧게)
 참석: 이수현, 최영호, 정다은

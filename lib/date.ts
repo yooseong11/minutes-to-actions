@@ -6,7 +6,7 @@
  *
  * 순수 함수. Date 객체가 밖으로 나가지 않는다 (UTC 기준 정수 연산).
  */
-import type { DateKey } from './types'
+import type { DateKey } from './types.js'
 
 const DAY = 86_400_000
 

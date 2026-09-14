@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { parseAbsolute, parseRelative, parseBackward, parseDue } from '../lib/date'
+import { parseAbsolute, parseRelative, parseBackward, parseDue } from '../lib/date.js'
 
 const MEETING = '2026-09-13' // 일요일
 
