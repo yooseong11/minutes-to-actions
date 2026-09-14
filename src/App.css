@@ -531,6 +531,28 @@ button.chip[aria-pressed="true"] { border-color: var(--color-accent-border); bac
 /* 태블릿·모바일은 문서 순서대로, 넓은 화면은 세 열의 안건 보드로 표시합니다. */
 .kanban-board { display: flex; flex-direction: column; gap: var(--space-8); }
 
+/* 한 열로 쌓이는 폭에서는 스크롤이 깁니다. 결정·할 일·미결 중 어느 칸을 읽고
+   있는지 잃지 않도록 섹션 제목을 화면 위에 붙입니다.
+
+   붙는 범위는 그 섹션 안뿐입니다 — containing block이 .doc-section이라,
+   섹션이 끝나면 제목도 같이 밀려 나가고 다음 제목이 올라옵니다.
+   제목 여러 개가 위에 쌓이지 않습니다.
+
+   주의: 조상 중 하나라도 overflow(hidden/auto/scroll/clip)가 걸리면 sticky는
+   에러 없이 조용히 죽습니다. .page → .main → .result → .doc → .kanban-board →
+   .doc-section 경로에는 지금 없습니다. 이 경로에 스크롤 컨테이너를 넣으면
+   여기가 같이 깨집니다. */
+@media (max-width: 1199px) {
+  .doc-title {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-sticky);
+    /* 배경이 없으면 지나가는 카드가 글자 뒤로 비칩니다 */
+    background: var(--color-bg);
+    padding-top: var(--space-3);
+  }
+}
+
 @media (min-width: 1200px) {
   .page { max-width: 1440px; }
 
