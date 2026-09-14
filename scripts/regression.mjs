@@ -76,10 +76,13 @@ for (const file of samples) {
   await writeFile(join(outDir, `${n}.json`), JSON.stringify(body, null, 2) + '\n', 'utf8')
 
   // 배포본이 구버전이면 여기서 드러납니다. 이 칸들이 없으면 배포부터 하십시오.
-  const missing = ['meetingDateSource', 'meetingTimeRaw', 'meetingPlaceRaw', 'purposeRaw', 'discussionSummary']
+  const missing = ['meetingDateSource', 'meetingTimeRaw', 'meetingPlaceRaw', 'purposeRaw', 'agendas']
     .filter((k) => !(k in body))
   if (missing.length) say(`${n}  ⚠ 구버전 배포입니다 — 응답에 없는 칸: ${missing.join(', ')}`)
+  // discussionSummary는 4.5에서 없앤 칸입니다. 있으면 4.5 이전 배포입니다.
+  if ('discussionSummary' in body) say(`${n}  ⚠ 구버전 배포입니다 — discussionSummary는 4.5에서 없앤 칸입니다`)
 
+  const agendas = body.agendas ?? []
   const items = body.items ?? []
   const byType = (t) => items.filter((i) => i.type === t).length
   const needsReview = items.filter((i) => i.confidence === 'needs_review').length
@@ -87,7 +90,12 @@ for (const file of samples) {
   say(`${n}  ${took}s`)
   say(`    기준일   ${body.meetingDate ?? '없음'} (${body.meetingDateSource}) / 원문 "${body.meetingDateRaw ?? '—'}"`)
   say(`    TPO      시각 "${body.meetingTimeRaw ?? '—'}" · 장소 "${body.meetingPlaceRaw ?? '—'}" · 목적 "${body.purposeRaw ?? '—'}"`)
-  say(`    논의내용 ${body.discussionSummary ? `${body.discussionSummary.length}자` : '없음(null)'}`)
+  // 정답지의 «안건 수»·«안건 묶음»을 손으로 채점할 때 이 줄만 보면 됩니다
+  say(`    안건     ${agendas.length}개`)
+  for (const a of agendas) {
+    const count = items.filter((i) => i.agendaId === a.id).length
+    say(`      · ${a.title} — 항목 ${count}개${a.summary ? ` · 요약 ${a.summary.length}자` : ' · 요약 없음(null)'}`)
+  }
   say(`    항목     ${items.length}개 — 결정 ${byType('decision')} / 할일 ${byType('action')} / 미결 ${byType('open')}`)
   say(`    검토필요 ${needsReview}개 · 환각탈락 ${(body.rejected ?? []).length}개`)
   say('')
