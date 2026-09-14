@@ -1,14 +1,14 @@
 /**
- * 회의록 추출 API — 아직 LLM을 붙이지 않은 확인용 껍데기.
+ * 회의록 추출 API.
  *
- * 이 단계의 목적은 하나입니다:
- *   Vercel에서 TypeScript 함수가 ../lib/*.ts 를 import 해서 도는가.
- * 그것만 확인되면 여기에 LLM 호출과 나머지 후처리를 채웁니다.
+ * 얇게 유지한다 — 요청 검증 → LLM 호출 → lib 후처리 → 응답.
+ * 계산·대조·판단은 전부 lib/ 안에 있고, 여기에는 넣지 않는다.
  *
  * 설계 원칙: AI는 발췌만, 계산·대조·판단은 코드가 한다.
  */
-import { parseDue } from '../lib/date.js'
-import { quoteExists } from '../lib/verify.js'
+import { postprocess, type ProcessedMeeting } from '../lib/postprocess.js'
+import { EXTRACTION_SCHEMA, SYSTEM_PROMPT, buildUserMessage } from '../lib/prompt.js'
+import type { RawExtraction } from '../lib/types.js'
 
 // @vercel/node를 의존성으로 들이지 않기 위해 필요한 부분만 선언한다.
 interface VercelRequest {
@@ -24,18 +24,13 @@ interface VercelResponse {
 
 export const config = { maxDuration: 60 }
 
-interface ExtractBody {
-  /** 회의록 원문 */
-  text: string
-  /** 'YYYY-MM-DD' — 사용자가 화면에서 입력. 본문에 없을 수 있다 */
-  meetingDate: string | null
-  /** 아래 둘은 껍데기 단계 전용. LLM을 붙이면 AI 출력에서 온다 */
-  dueDateRaw?: string | null
-  anchorDateRaw?: string | null
-  quote?: string | null
-}
-
 const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/
+const MAX_TEXT = 20_000
+
+interface ExtractBody {
+  text: string
+  meetingDate: string | null
+}
 
 function parseBody(raw: unknown): ExtractBody | null {
   let body: unknown = raw
@@ -49,19 +44,20 @@ function parseBody(raw: unknown): ExtractBody | null {
   if (typeof body !== 'object' || body === null) return null
 
   const b = body as Record<string, unknown>
-  if (typeof b.text !== 'string' || !b.text.trim() || b.text.length > 50_000) return null
+  if (typeof b.text !== 'string' || !b.text.trim() || b.text.length > MAX_TEXT) return null
   if (b.meetingDate != null && (typeof b.meetingDate !== 'string' || !DATE_KEY.test(b.meetingDate))) return null
 
-  return {
-    text: b.text,
-    meetingDate: (b.meetingDate as string | undefined) ?? null,
-    dueDateRaw: typeof b.dueDateRaw === 'string' ? b.dueDateRaw : null,
-    anchorDateRaw: typeof b.anchorDateRaw === 'string' ? b.anchorDateRaw : null,
-    quote: typeof b.quote === 'string' ? b.quote : null,
-  }
+  return { text: b.text, meetingDate: (b.meetingDate as string | undefined) ?? null }
 }
 
-export default function handler(req: VercelRequest, res: VercelResponse): void {
+/** AI 응답이 스키마 모양인지 최소한만 본다. 내용 검증은 postprocess가 한다 */
+function isRawExtraction(value: unknown): value is RawExtraction {
+  if (typeof value !== 'object' || value === null) return false
+  const v = value as Record<string, unknown>
+  return Array.isArray(v.attendeesRaw) && Array.isArray(v.items)
+}
+
+export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   res.setHeader('Cache-Control', 'no-store')
 
   if (req.method !== 'POST') {
@@ -70,21 +66,93 @@ export default function handler(req: VercelRequest, res: VercelResponse): void {
     return
   }
 
-  const body = parseBody(req.body)
-  if (!body) {
-    res.status(400).json({ error: '회의록 본문과 회의 날짜(YYYY-MM-DD)를 확인해 주세요.' })
+  // 공유 키가 설정돼 있으면 요구한다. 없으면 열어 둔다 (1차 범위)
+  const sharedKey = process.env.EXTRACT_SHARED_KEY
+  if (sharedKey && req.headers['x-extract-key'] !== sharedKey) {
+    res.status(401).json({ error: '접근 키가 필요해요.' })
     return
   }
 
-  // 지금은 LLM 없이, 코드 후처리 두 조각만 돌려서 배선을 확인한다.
-  const due = parseDue(body.dueDateRaw, body.anchorDateRaw, body.meetingDate)
-  const quoteOk = body.quote == null ? null : quoteExists(body.quote, body.text)
+  const body = parseBody(req.body)
+  if (!body) {
+    res.status(400).json({ error: `회의록 본문(1~${MAX_TEXT}자)과 회의 날짜(YYYY-MM-DD)를 확인해 주세요.` })
+    return
+  }
 
-  res.status(200).json({
-    stage: 'wiring-check',
-    meetingDate: body.meetingDate,
-    due,
-    quoteOk,
-    note: 'LLM 미연결. lib/*.ts import가 Vercel에서 도는지 확인하는 단계입니다.',
-  })
+  if (!process.env.OPENAI_API_KEY) {
+    res.status(503).json({ error: '아직 설정되지 않았어요. 서버 환경 변수를 확인해 주세요.' })
+    return
+  }
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/responses', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: process.env.OPENAI_MODEL || 'gpt-4.1-mini',
+        store: false,
+        instructions: SYSTEM_PROMPT,
+        input: buildUserMessage(body.text, body.meetingDate),
+        max_output_tokens: 8000,
+        text: { format: { type: 'json_schema', name: 'meeting_extraction', strict: true, schema: EXTRACTION_SCHEMA } },
+      }),
+      signal: AbortSignal.timeout(45_000),
+    })
+
+    if (!response.ok) {
+      res.status(response.status === 429 ? 429 : 502).json({
+        error:
+          response.status === 429
+            ? 'AI 요청이 많아요. 잠시 후 다시 시도해 주세요.'
+            : 'AI가 응답하지 못했어요. 잠시 후 다시 시도해 주세요.',
+      })
+      return
+    }
+
+    const result = (await response.json()) as {
+      status?: string
+      output?: { content?: { type: string; text?: string }[] }[]
+    }
+    const content = (result.output ?? []).flatMap((o) => o.content ?? [])
+    if (content.some((c) => c.type === 'refusal')) {
+      res.status(422).json({ error: '이 입력에서 항목을 추출할 수 없어요.' })
+      return
+    }
+    if (result.status !== 'completed') {
+      res.status(502).json({ error: 'AI 응답이 완성되지 않았어요. 회의록을 나눠서 넣어 주세요.' })
+      return
+    }
+
+    let raw: unknown
+    try {
+      raw = JSON.parse(
+        content
+          .filter((c) => c.type === 'output_text')
+          .map((c) => c.text ?? '')
+          .join(''),
+      )
+    } catch {
+      res.status(502).json({ error: 'AI가 만든 형식이 올바르지 않아요. 다시 시도해 주세요.' })
+      return
+    }
+    if (!isRawExtraction(raw)) {
+      res.status(502).json({ error: 'AI가 만든 형식이 올바르지 않아요. 다시 시도해 주세요.' })
+      return
+    }
+
+    // 여기서부터가 이 프로젝트의 본체 — 코드가 검사하고 계산하고 대조한다
+    const meeting: ProcessedMeeting = postprocess(raw, body.text, body.meetingDate)
+
+    res.status(200).json(meeting)
+  } catch (error) {
+    const timedOut = error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')
+    res.status(timedOut ? 504 : 502).json({
+      error: timedOut
+        ? '응답 시간이 길어졌어요. 회의록을 나눠서 넣어 주세요.'
+        : '서버에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.',
+    })
+  }
 }
