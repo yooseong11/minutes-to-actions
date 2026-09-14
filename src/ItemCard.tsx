@@ -49,21 +49,21 @@ export default function ItemCard({ item, attendees, onEdit, onDelete }: {
         </div>
       </div>
       <p className={struck ? 'item-content superseded' : 'item-content'}>{item.content}</p>
+      {item.quote && <div className="item-source">
+        <blockquote className="item-source-text">{item.quote}</blockquote>
+      </div>}
 
       <dl className="fields">
         <div className="field">
           <dt className="field-key">담당자</dt>
           <dd className="field-value">
             <Assignee item={item} />
-
           </dd>
         </div>
-
         <div className="field">
           <dt className="field-key">기한</dt>
           <dd className="field-value">
             <Due item={item} />
-
           </dd>
         </div>
 
@@ -89,11 +89,7 @@ export default function ItemCard({ item, attendees, onEdit, onDelete }: {
         <p className="item-note">뒤집힌 내용: “{item.supersededQuote}”</p>
       )}
 
-      {/* 근거 인용문. 접어 두되 지우지는 않습니다 — 이 항목이 어디서 나왔는지가 근거입니다 */}
-      {item.quote && <details className="item-quote">
-        <summary className="item-quote-summary">원문 근거</summary>
-        <p className="item-quote-text">{item.quote}</p>
-      </details>}
+
     </article>
   )
 }
