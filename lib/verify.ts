@@ -6,7 +6,7 @@
  *
  * 순수 함수. LLM 호출 없음.
  */
-import type { RawItem } from './types.ts'
+import type { RawItem } from './types'
 
 /** 원문에 없는 것으로 판정된 필드 */
 export type HallucinatedField = 'quote' | 'supersededQuote'

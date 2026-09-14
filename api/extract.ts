@@ -7,8 +7,8 @@
  *
  * 설계 원칙: AI는 발췌만, 계산·대조·판단은 코드가 한다.
  */
-import { parseDue } from '../lib/date.ts'
-import { quoteExists } from '../lib/verify.ts'
+import { parseDue } from '../lib/date'
+import { quoteExists } from '../lib/verify'
 
 // @vercel/node를 의존성으로 들이지 않기 위해 필요한 부분만 선언한다.
 interface VercelRequest {
