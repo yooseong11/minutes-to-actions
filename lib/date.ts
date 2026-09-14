@@ -93,6 +93,15 @@ export function parseRelative(raw: unknown, baseDateKey: string | null): DateKey
   if (/(이번\s*달|이달|금월|월말)(말|안|내)/.test(text) || /^(이번달|이달)/.test(text)) {
     return endOfMonth(baseDateKey)
   }
+
+  // "이번 주 안에", "다음 주까지" — 그 주의 끝(일요일)
+  const weekEnd = text.match(/(이번주|금주|다음주|담주|차주)(안에|내|까지|말)/)
+  if (weekEnd) {
+    const baseMs = toEpoch(baseDateKey) as number
+    const baseIdx = (new Date(baseMs).getUTCDay() + 6) % 7 // 월요일 시작
+    const nextWeek = /다음주|담주|차주/.test(weekEnd[1] as string)
+    return toDateKey(baseMs + (6 - baseIdx + (nextWeek ? 7 : 0)) * DAY)
+  }
   if (/다음\s*달(말|안|내)|담달(말|안|내)/.test(text)) {
     const d = new Date(toEpoch(baseDateKey) as number)
     return endOfMonth(toDateKey(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1)))
@@ -100,14 +109,19 @@ export function parseRelative(raw: unknown, baseDateKey: string | null): DateKey
 
   const weekday = text.match(/(다음주|담주|차주|이번주|금주)?([일월화수목금토])요일/)
   if (weekday) {
-    const target = WEEKDAYS[weekday[2]]
-    const nextWeek = /다음주|담주|차주/.test(weekday[1] ?? '')
+    const target = WEEKDAYS[weekday[2] as string] as number
+    const prefix = weekday[1] ?? ''
     const baseMs = toEpoch(baseDateKey) as number
     // 월요일 시작 주로 옮겨서 계산
     const baseIdx = (new Date(baseMs).getUTCDay() + 6) % 7
     const targetIdx = (target + 6) % 7
     const monday = baseMs - baseIdx * DAY
-    return toDateKey(monday + (targetIdx + (nextWeek ? 7 : 0)) * DAY)
+
+    if (/다음주|담주|차주/.test(prefix)) return toDateKey(monday + (targetIdx + 7) * DAY)
+    if (prefix) return toDateKey(monday + targetIdx * DAY) // "이번 주 X요일"은 과거여도 그대로
+
+    // 수식어가 없으면 기한이다. 지나간 요일이면 다음 주로 민다.
+    return toDateKey(monday + (targetIdx < baseIdx ? targetIdx + 7 : targetIdx) * DAY)
   }
 
   const inDays = text.match(/(\d+)일\s*(뒤|후|이내|안에|내)/)
