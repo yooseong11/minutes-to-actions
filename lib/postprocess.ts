@@ -12,7 +12,15 @@
  * 순수 함수. LLM 호출 없음.
  */
 import { parseDue, type DueMethod } from './date.js'
-import { findDuplicateNames, matchAssignee, normalizeName, shouldPreselect } from './people.js'
+import {
+  assigneeInQuote,
+  findDuplicateNames,
+  hasUnclearAmount,
+  isFirstPerson,
+  matchAssignee,
+  normalizeName,
+  shouldPreselect,
+} from './people.js'
 import { verifyItems, type RejectedItem } from './verify.js'
 import type { Confidence, DateKey, RawAttendee, RawExtraction, RawItem, ReviewReason } from './types.js'
 
@@ -51,6 +59,27 @@ function addReason(list: ReviewReason[], reason: ReviewReason): void {
   if (!list.includes(reason)) list.push(reason)
 }
 
+/**
+ * 코드가 판정하는 사유. AI가 넣었더라도 버리고 코드가 다시 정한다.
+ * AI가 "이건 환산 불가"라고 붙였는데 코드가 환산에 성공하는 경우를 막는다.
+ */
+const CODE_OWNED = new Set<ReviewReason>([
+  'due_unparseable',
+  'assignee_unmatched',
+  'assignee_unknown',
+  'duplicate_name',
+  'unit_unclear',
+  'no_assignee',
+  'blocked',
+  'superseded',
+])
+
+/** 인용문 비교용 — 공백만 접는다 */
+function normalizeQuote(quote: string | null | undefined): string | null {
+  if (typeof quote !== 'string' || !quote.trim()) return null
+  return quote.replace(/\s+/g, ' ').trim()
+}
+
 export function postprocess(
   raw: RawExtraction,
   sourceText: string,
@@ -64,25 +93,52 @@ export function postprocess(
   // 5) 동명이인 — 항목별이 아니라 참석자 목록 전체를 보고 한 번에 판정한다
   const duplicates = findDuplicateNames(attendees)
 
-  const items: ProcessedItem[] = verified.map((item) => {
-    const reasons: ReviewReason[] = [...(item.reviewReasons ?? [])]
+  // 번복된 결정은 항목 하나다. 뒤집힌 쪽을 따로 만들었으면 여기서 접는다.
+  const superseded = new Set(
+    verified.map((i) => normalizeQuote(i.supersededQuote)).filter((q): q is string => q !== null),
+  )
+  const deduped = verified.filter((i) => !superseded.has(normalizeQuote(i.quote) ?? ''))
 
-    // 2) 기한
+  const items: ProcessedItem[] = deduped.map((item) => {
+    // AI가 넣은 사유는 참고만 한다. 코드가 판정할 수 있는 것은 코드가 다시 정한다.
+    const reasons: ReviewReason[] = (item.reviewReasons ?? []).filter((r) => !CODE_OWNED.has(r))
+
+    // 2) 기한 — 성공하면 due_unparseable을 붙이지 않는다 (AI 오탐 제거)
     const due = parseDue(item.dueDateRaw, item.anchorDateRaw, meetingDate)
     if (due.unparseable) addReason(reasons, 'due_unparseable')
 
+    // 3) 1인칭은 누구인지 특정할 수 없다. 인용문 검사보다 먼저 본다.
+    let assigneeRaw = item.assigneeRaw
+    const firstPerson = isFirstPerson(assigneeRaw)
+    if (firstPerson) addReason(reasons, 'assignee_unknown')
+
+    // 담당자가 근거 인용문 안에 없으면 AI가 다른 발화에서 끌어온 것이다. 비우고 되묻는다.
+    if (!firstPerson && assigneeRaw && !assigneeInQuote(assigneeRaw, item.quote)) {
+      assigneeRaw = null
+      addReason(reasons, 'no_assignee')
+    }
+    // 할 일에만 담당자가 필요하다. 결정·미결에는 붙이지 않는다.
+    if (!assigneeRaw && item.type === 'action') addReason(reasons, 'no_assignee')
+
     // 3~4) 참석자 대조 + 후보 제안
-    const match = matchAssignee(item.assigneeRaw, item.assigneeContextRaw, attendees)
+    const match = firstPerson
+      ? { assignee: null, candidates: [], reasons: [] as ReviewReason[] }
+      : matchAssignee(assigneeRaw, item.assigneeContextRaw, attendees)
     for (const r of match.reasons) addReason(reasons, r)
 
     // 5) 같은 이름이 참석자에 둘 이상이면, 확정됐더라도 사람이 확인해야 한다
-    if (duplicates.has(normalizeName(item.assigneeRaw))) addReason(reasons, 'duplicate_name')
+    if (duplicates.has(normalizeName(assigneeRaw))) addReason(reasons, 'duplicate_name')
+
+    // 단위 없는 금액
+    if (hasUnclearAmount(`${item.content} ${item.quote}`)) addReason(reasons, 'unit_unclear')
 
     // 선행조건이 있으면 blocked
     if (item.blockedByRaw) addReason(reasons, 'blocked')
+    if (item.supersededQuote) addReason(reasons, 'superseded')
 
     return {
       ...item,
+      assigneeRaw,
       id: stableId(`${item.type}|${item.quote}`),
       due: due.due,
       dueAnchor: due.anchor,

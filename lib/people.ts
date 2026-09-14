@@ -109,3 +109,35 @@ export function matchAssignee(
 export function shouldPreselect(match: AssigneeMatch): boolean {
   return match.assignee === null && match.candidates.length === 1 && !match.reasons.includes('duplicate_name')
 }
+
+/** 1인칭 표현. 담당자로 쓰이면 누구인지 특정할 수 없다 */
+const FIRST_PERSON = new Set(['나', '내', '내가', '저', '제', '제가', '본인', '우리'])
+
+export function isFirstPerson(assigneeRaw: string | null | undefined): boolean {
+  if (typeof assigneeRaw !== 'string') return false
+  return FIRST_PERSON.has(assigneeRaw.replace(/\s+/g, ''))
+}
+
+/**
+ * 담당자 이름이 근거 인용문 안에 실제로 있는가.
+ *
+ * 없으면 AI가 다른 발화에서 끌어와 추론한 것이다.
+ * (전사본에서 "뽑아주세요" → "제가요?" → "네 수현 씨가" 같은 경우)
+ * verify.ts가 인용문을 원문과 대조하는 것과 같은 방식으로,
+ * 담당자도 근거 안에 있어야 인정한다. 부탁이 아니라 검사다.
+ */
+export function assigneeInQuote(assigneeRaw: string | null | undefined, quote: string): boolean {
+  if (typeof assigneeRaw !== 'string' || !assigneeRaw.trim()) return false
+  const haystack = (quote ?? '').replace(/\s+/g, '')
+  if (haystack.includes(assigneeRaw.replace(/\s+/g, ''))) return true
+  const name = normalizeName(assigneeRaw)
+  return name !== '' && haystack.includes(name)
+}
+
+/**
+ * 단위 없는 금액 탐지. "3천", "4천2백" — 만원인지 천원인지 본문에 없다.
+ * "10만원"처럼 단위가 붙어 있으면 걸리지 않는다.
+ */
+export function hasUnclearAmount(text: string): boolean {
+  return /\d+\s*[천백만](?!\s*원)/.test(text ?? '')
+}
