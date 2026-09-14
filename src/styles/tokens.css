@@ -1,0 +1,307 @@
+/* ==========================================================================
+   회의록 추출기 — 전역 디자인 토큰
+   --------------------------------------------------------------------------
+   규칙 1. 모든 치수(간격·크기·반경·선높이)는 4px 배수만 씁니다.
+   규칙 2. 기본 색은 Mist, 강조색은 Emerald. 다른 색상군은 상태 표시에만.
+   규칙 3. 컴포넌트 CSS는 원시 팔레트(--mist-*)를 직접 쓰지 말고
+           의미 토큰(--color-bg, --color-accent ...)만 참조합니다.
+   ========================================================================== */
+
+:root {
+  /* ---------- 1. 원시 팔레트 — Mist (Tailwind) ---------- */
+  --mist-50:  oklch(98.7% 0.002 197.1);
+  --mist-100: oklch(96.3% 0.002 197.1);
+  --mist-200: oklch(92.5% 0.005 214.3);
+  --mist-300: oklch(87.2% 0.007 219.6);
+  --mist-400: oklch(72.3% 0.014 214.4);
+  --mist-500: oklch(56%   0.021 213.5);
+  --mist-600: oklch(45%   0.017 213.2);
+  --mist-700: oklch(37.8% 0.015 216);
+  --mist-800: oklch(27.5% 0.011 216.9);
+  --mist-900: oklch(21.8% 0.008 223.9);
+  --mist-950: oklch(14.8% 0.004 228.8);
+
+  /* ---------- 2. 원시 팔레트 — Emerald (강조) ---------- */
+  --emerald-50:  oklch(97.9% 0.021 166.113);
+  --emerald-100: oklch(95%   0.052 163.051);
+  --emerald-200: oklch(90.5% 0.093 164.15);
+  --emerald-300: oklch(84.5% 0.143 164.978);
+  --emerald-400: oklch(76.5% 0.177 163.223);
+  --emerald-500: oklch(69.6% 0.17  162.48);
+  --emerald-600: oklch(59.6% 0.145 163.225);
+  --emerald-700: oklch(50.8% 0.118 165.612);
+  --emerald-800: oklch(43.2% 0.095 166.913);
+  --emerald-900: oklch(37.8% 0.077 168.94);
+  --emerald-950: oklch(26.2% 0.051 172.552);
+
+  /* ---------- 3. 상태 색 — reviewReason 표시 전용 ----------
+     노란 배지(확인만) / 되묻기(답을 달라) / 환각 탈락 을 구분합니다.
+     Amber·Rose는 이 세 용도 밖에서 쓰지 않습니다. */
+  --amber-50:  oklch(98.7% 0.022 95.277);
+  --amber-200: oklch(92.4% 0.12  95.746);
+  --amber-500: oklch(76.9% 0.188 70.08);
+  --amber-700: oklch(55.5% 0.163 48.998);
+  --amber-900: oklch(41.4% 0.112 45.904);
+
+  --rose-50:   oklch(96.9% 0.015 12.422);
+  --rose-200:  oklch(89.2% 0.058 10.001);
+  --rose-500:  oklch(64.5% 0.246 16.439);
+  --rose-700:  oklch(51.4% 0.222 16.935);
+  --rose-900:  oklch(41%   0.159 10.272);
+
+  /* ---------- 4. 의미 토큰 — 배경 / 표면 ---------- */
+  --color-bg:            var(--mist-50);
+  --color-surface:       #fff;
+  --color-surface-muted: var(--mist-100);
+  --color-surface-sunken: var(--mist-200);
+
+  /* ---------- 5. 의미 토큰 — 글자 ---------- */
+  --color-text:          var(--mist-950);
+  --color-text-muted:    var(--mist-600);
+  --color-text-subtle:   var(--mist-500);
+  --color-text-inverse:  var(--mist-50);
+
+  /* ---------- 6. 의미 토큰 — 선 ---------- */
+  --color-border:        var(--mist-200);
+  --color-border-strong: var(--mist-300);
+  --color-divider:       var(--mist-200);
+
+  /* ---------- 7. 의미 토큰 — 강조 (Emerald) ---------- */
+  --color-accent:         var(--emerald-600);
+  --color-accent-hover:   var(--emerald-700);
+  --color-accent-active:  var(--emerald-800);
+  --color-accent-subtle:  var(--emerald-50);
+  --color-accent-border:  var(--emerald-200);
+  --color-accent-text:    var(--emerald-700);
+  --color-on-accent:      #fff;
+  --color-focus-ring:     var(--emerald-500);
+
+  /* ---------- 8. 의미 토큰 — 검토 상태 ----------
+     warn      = 노란 배지. 확인만 하면 저장 가능
+                 (due_unparseable / blocked / conditional / ambiguous_intent)
+     ask       = 되묻기. 값을 받아야 저장 가능
+                 (no_assignee / assignee_unknown / unit_unclear /
+                  assignee_unmatched / duplicate_name)
+     reject    = 환각 탐지로 탈락한 항목. 감추지 않고 드러냅니다
+     superseded= 번복된 결정. 취소선 + supersededQuote 병기 */
+  --color-warn:          var(--amber-500);
+  --color-warn-bg:       var(--amber-50);
+  --color-warn-border:   var(--amber-200);
+  --color-warn-text:     var(--amber-900);
+
+  --color-ask:           var(--emerald-500);
+  --color-ask-bg:        var(--emerald-50);
+  --color-ask-border:    var(--emerald-200);
+  --color-ask-text:      var(--emerald-900);
+
+  --color-reject:        var(--rose-500);
+  --color-reject-bg:     var(--rose-50);
+  --color-reject-border: var(--rose-200);
+  --color-reject-text:   var(--rose-900);
+
+  --color-superseded-text:   var(--mist-400);
+  --color-superseded-stroke: var(--mist-400);
+
+  /* ---------- 9. 간격 — 4px 그리드 ----------
+     이름 = 4px 배수. --space-3 은 12px 입니다. */
+  --space-0:  0px;
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-7:  28px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-14: 56px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  /* ---------- 10. 글자 크기 — 전부 4px 배수 ---------- */
+  --text-xs:   12px;
+  --text-sm:   16px;   /* 본문 기본 */
+  --text-base: 16px;
+  --text-lg:   20px;
+  --text-xl:   24px;
+  --text-2xl:  32px;
+  --text-3xl:  40px;
+
+  /* 선높이도 4px 배수로 고정 — 글줄이 그리드에 맞아떨어지게 */
+  --leading-xs:   16px;
+  --leading-sm:   24px;
+  --leading-base: 24px;
+  --leading-lg:   28px;
+  --leading-xl:   32px;
+  --leading-2xl:  40px;
+  --leading-3xl:  48px;
+
+  --weight-regular:  400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+
+  --font-sans: 'Pretendard', -apple-system, BlinkMacSystemFont,
+               'Apple SD Gothic Neo', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'SFMono-Regular', ui-monospace, 'D2Coding', Menlo, monospace;
+
+  /* ---------- 11. 모서리 반경 — 4px 배수 ---------- */
+  --radius-sm:   4px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-xl:   16px;
+  --radius-full: 9999px;   /* 알약 배지용 예외 */
+
+  /* ---------- 12. 테두리 두께 ---------- */
+  --border-thin:   1px;    /* 헤어라인 예외 */
+  --border-thick:  4px;    /* 취소선·좌측 강조 막대 */
+
+  /* ---------- 13. 그림자 ---------- */
+  --shadow-sm: 0 1px 4px oklch(14.8% 0.004 228.8 / 0.06);
+  --shadow-md: 0 4px 12px oklch(14.8% 0.004 228.8 / 0.08);
+  --shadow-lg: 0 8px 24px oklch(14.8% 0.004 228.8 / 0.10);
+
+  /* ---------- 14. 레이아웃 폭 — 4px 배수 ---------- */
+  --width-content: 720px;
+  --width-page:    1200px;
+  --control-height-sm: 32px;
+  --control-height-md: 40px;
+  --control-height-lg: 48px;
+
+  /* ---------- 15. 모션 ---------- */
+  --ease: cubic-bezier(0.2, 0, 0.2, 1);
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+
+  --z-base: 0;
+  --z-sticky: 100;
+  --z-dialog: 300;
+}
+
+/* ==========================================================================
+   다크 모드 — 의미 토큰만 뒤집습니다. 원시 팔레트는 건드리지 않습니다.
+   ========================================================================== */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --color-bg:             var(--mist-950);
+    --color-surface:        var(--mist-900);
+    --color-surface-muted:  var(--mist-800);
+    --color-surface-sunken: var(--mist-950);
+
+    --color-text:         var(--mist-50);
+    --color-text-muted:   var(--mist-400);
+    --color-text-subtle:  var(--mist-500);
+    --color-text-inverse: var(--mist-950);
+
+    --color-border:        var(--mist-800);
+    --color-border-strong: var(--mist-700);
+    --color-divider:       var(--mist-800);
+
+    --color-accent:        var(--emerald-400);
+    --color-accent-hover:  var(--emerald-300);
+    --color-accent-active: var(--emerald-200);
+    --color-accent-subtle: var(--emerald-950);
+    --color-accent-border: var(--emerald-800);
+    --color-accent-text:   var(--emerald-300);
+    --color-on-accent:     var(--mist-950);
+    --color-focus-ring:    var(--emerald-400);
+
+    --color-warn:        var(--amber-500);
+    --color-warn-bg:     oklch(41.4% 0.112 45.904 / 0.25);
+    --color-warn-border: var(--amber-700);
+    --color-warn-text:   var(--amber-200);
+
+    --color-ask:        var(--emerald-400);
+    --color-ask-bg:     var(--emerald-950);
+    --color-ask-border: var(--emerald-800);
+    --color-ask-text:   var(--emerald-200);
+
+    --color-reject:        var(--rose-500);
+    --color-reject-bg:     oklch(41% 0.159 10.272 / 0.25);
+    --color-reject-border: var(--rose-700);
+    --color-reject-text:   var(--rose-200);
+
+    --color-superseded-text:   var(--mist-500);
+    --color-superseded-stroke: var(--mist-500);
+
+    --shadow-sm: 0 1px 4px oklch(0% 0 0 / 0.3);
+    --shadow-md: 0 4px 12px oklch(0% 0 0 / 0.4);
+    --shadow-lg: 0 8px 24px oklch(0% 0 0 / 0.5);
+  }
+}
+
+/* 수동 토글이 미디어쿼리를 이깁니다 */
+:root[data-theme='dark'] {
+  --color-bg:             var(--mist-950);
+  --color-surface:        var(--mist-900);
+  --color-surface-muted:  var(--mist-800);
+  --color-surface-sunken: var(--mist-950);
+  --color-text:           var(--mist-50);
+  --color-text-muted:     var(--mist-400);
+  --color-text-subtle:    var(--mist-500);
+  --color-text-inverse:   var(--mist-950);
+  --color-border:         var(--mist-800);
+  --color-border-strong:  var(--mist-700);
+  --color-divider:        var(--mist-800);
+  --color-accent:         var(--emerald-400);
+  --color-accent-hover:   var(--emerald-300);
+  --color-accent-active:  var(--emerald-200);
+  --color-accent-subtle:  var(--emerald-950);
+  --color-accent-border:  var(--emerald-800);
+  --color-accent-text:    var(--emerald-300);
+  --color-on-accent:      var(--mist-950);
+  --color-focus-ring:     var(--emerald-400);
+  --color-warn-bg:        oklch(41.4% 0.112 45.904 / 0.25);
+  --color-warn-border:    var(--amber-700);
+  --color-warn-text:      var(--amber-200);
+  --color-ask:            var(--emerald-400);
+  --color-ask-bg:         var(--emerald-950);
+  --color-ask-border:     var(--emerald-800);
+  --color-ask-text:       var(--emerald-200);
+  --color-reject-bg:      oklch(41% 0.159 10.272 / 0.25);
+  --color-reject-border:  var(--rose-700);
+  --color-reject-text:    var(--rose-200);
+  --color-superseded-text:   var(--mist-500);
+  --color-superseded-stroke: var(--mist-500);
+}
+
+/* ==========================================================================
+   최소 리셋 + 기본값
+   ========================================================================== */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { color-scheme: light dark; }
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-base);
+  -webkit-font-smoothing: antialiased;
+}
+
+:where(h1, h2, h3, h4, p, figure, blockquote, ul, ol) { margin: 0; }
+:where(ul, ol) { padding: 0; list-style: none; }
+
+:where(button, input, textarea, select) {
+  font: inherit;
+  color: inherit;
+}
+
+:where(a) { color: var(--color-accent-text); }
+
+:where(:focus-visible) {
+  outline: var(--space-1) solid var(--color-focus-ring);
+  outline-offset: var(--border-thin);
+  border-radius: var(--radius-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
