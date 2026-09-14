@@ -80,6 +80,7 @@ export default function ResultDoc({
         )}
       </Section>
 
+      <div className="kanban-board">
       {SECTIONS.map((s) => {
         const items = meeting.items.filter((i) => i.type === s.type)
         return (
@@ -97,6 +98,7 @@ export default function ResultDoc({
           </Section>
         )
       })}
+      </div>
     </div>
   )
 }

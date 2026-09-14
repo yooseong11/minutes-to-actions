@@ -499,3 +499,42 @@ button.chip[aria-pressed="true"] { border-color: var(--color-accent-border); bac
   font-size: var(--text-xs);
   line-height: var(--leading-xs);
 }
+
+/* 태블릿·모바일은 문서 순서대로, 넓은 화면은 세 열의 안건 보드로 표시합니다. */
+.kanban-board { display: flex; flex-direction: column; gap: var(--space-8); }
+
+@media (min-width: 1200px) {
+  .page { max-width: 1440px; }
+
+  /* 원문과 회의 개요의 읽기 폭은 유지하고 보드만 넓힙니다. */
+  .header,
+  .main > :not(.result),
+  .result > :not(.doc),
+  .doc > :not(.kanban-board) {
+    width: 100%;
+    max-width: var(--width-content);
+    margin-inline: auto;
+  }
+
+  .kanban-board {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-4);
+    align-items: stretch;
+  }
+
+  .kanban-board > .doc-section {
+    min-width: 0;
+    padding: var(--space-4);
+    background: var(--color-surface-muted);
+    border: var(--border-thin) solid var(--color-border);
+    border-radius: var(--radius-lg);
+  }
+
+  .kanban-board .doc-title { flex-wrap: wrap; }
+  .kanban-board .doc-count { margin-left: auto; }
+  .kanban-board .doc-note { flex-basis: 100%; margin-left: 0; line-height: var(--leading-sm); }
+  .kanban-board .item, .kanban-board .items { min-width: 0; }
+  .kanban-board .field-value { min-width: 0; overflow-wrap: anywhere; }
+  .kanban-board .item-quote { padding-left: 0; }
+}
