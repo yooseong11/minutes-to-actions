@@ -104,12 +104,6 @@
   color: var(--color-ask-text);
 }
 
-.badge--reject {
-  background: var(--color-reject-bg);
-  border-color: var(--color-reject-border);
-  color: var(--color-reject-text);
-}
-
 .superseded {
   font-size: var(--text-xs);
   line-height: var(--leading-xs);
@@ -122,5 +116,27 @@
   flex-basis: 100%;
   font-size: var(--text-xs);
   line-height: var(--leading-xs);
+  color: var(--color-text-subtle);
+}
+
+/* 제외 항목 — 빨강을 쓰지 않습니다. 사용자가 고칠 수 있는 일이 아닙니다. */
+.excluded {
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-excluded-bg);
+  border: var(--border-thin) solid var(--color-excluded-border);
+  border-radius: var(--radius-lg);
+}
+
+.excluded-summary {
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-excluded-text);
+  cursor: pointer;
+}
+
+.excluded-note {
+  margin-top: var(--space-3);
+  font-size: var(--text-xs);
+  line-height: var(--leading-sm);
   color: var(--color-text-subtle);
 }

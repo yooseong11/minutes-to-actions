@@ -6,9 +6,12 @@ import './App.css'
  * 여기 있는 것은 두 가지를 증명하기 위한 최소한입니다.
  *   1. src/ 에서 lib/ 의 타입을 그대로 import 할 수 있다
  *   2. tokens.css 의 상태 색이 실제로 먹는다
+ *
+ * 배지는 예외에만 답니다. 손댈 게 없는 항목은 아무 표시도 하지 않습니다.
+ *   (표시 없음) — 기본. 그대로 저장된다
+ *   확인 필요   — 사람이 읽어야 함. 그래도 저장은 된다
+ *   입력 필요   — 사람이 빈칸을 채워야 저장이 된다
  */
-
-/** 인수인계 문서의 "화면 처리" 표를 그대로 옮긴 것 */
 const BADGE_STYLE: Record<ReviewReason, 'warn' | 'ask'> = {
   no_assignee: 'ask',
   assignee_unknown: 'ask',
@@ -23,6 +26,9 @@ const BADGE_STYLE: Record<ReviewReason, 'warn' | 'ask'> = {
 }
 
 export default function App() {
+  const ask = Object.values(BADGE_STYLE).filter((v) => v === 'ask').length
+  const warn = Object.values(BADGE_STYLE).length - ask
+
   return (
     <div className="page">
       <header className="header">
@@ -37,16 +43,23 @@ export default function App() {
 
         <section className="legend">
           <h2 className="legend-title">표시 규칙</h2>
-          <span className="badge badge--warn">확인만 하면 됨</span>
-          <span className="badge badge--ask">답을 달라</span>
-          <span className="badge badge--reject">환각으로 탈락</span>
-          <span className="superseded">번복된 결정</span>
+          <span className="badge badge--warn">확인 필요</span>
+          <span className="badge badge--ask">입력 필요</span>
+          <span className="superseded">번복됨</span>
           <p className="legend-note">
-            사유 {Object.keys(BADGE_STYLE).length}종 중 되묻기{' '}
-            {Object.values(BADGE_STYLE).filter((v) => v === 'ask').length}종,
-            배지 {Object.values(BADGE_STYLE).filter((v) => v === 'warn').length}종.
+            표시가 없으면 그대로 저장됩니다. 확인 필요({warn}종)는 읽고 넘어가면 되고,
+            입력 필요({ask}종)는 빈칸을 채워야 저장됩니다.
           </p>
         </section>
+
+        <details className="excluded">
+          <summary className="excluded-summary">원문 대조 실패로 제외됨 0건</summary>
+          <p className="excluded-note">
+            인용문이 원문에 없어 항목에서 뺀 것들입니다. 대부분은 지어낸 내용이지만,
+            줄바꿈 차이 때문에 멀쩡한 항목이 걸리기도 합니다. 조용히 버리면
+            액션아이템 하나가 사라진 걸 모르게 되므로 건수만 남겨둡니다.
+          </p>
+        </details>
       </main>
     </div>
   )

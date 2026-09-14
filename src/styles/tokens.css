@@ -35,19 +35,13 @@
   --emerald-950: oklch(26.2% 0.051 172.552);
 
   /* ---------- 3. 상태 색 — reviewReason 표시 전용 ----------
-     노란 배지(확인만) / 되묻기(답을 달라) / 환각 탈락 을 구분합니다.
-     Amber·Rose는 이 세 용도 밖에서 쓰지 않습니다. */
+     Amber는 '확인 필요' 배지 밖에서 쓰지 않습니다. */
   --amber-50:  oklch(98.7% 0.022 95.277);
   --amber-200: oklch(92.4% 0.12  95.746);
   --amber-500: oklch(76.9% 0.188 70.08);
   --amber-700: oklch(55.5% 0.163 48.998);
   --amber-900: oklch(41.4% 0.112 45.904);
 
-  --rose-50:   oklch(96.9% 0.015 12.422);
-  --rose-200:  oklch(89.2% 0.058 10.001);
-  --rose-500:  oklch(64.5% 0.246 16.439);
-  --rose-700:  oklch(51.4% 0.222 16.935);
-  --rose-900:  oklch(41%   0.159 10.272);
 
   /* ---------- 4. 의미 토큰 — 배경 / 표면 ---------- */
   --color-bg:            var(--mist-50);
@@ -77,27 +71,33 @@
   --color-focus-ring:     var(--emerald-500);
 
   /* ---------- 8. 의미 토큰 — 검토 상태 ----------
-     warn      = 노란 배지. 확인만 하면 저장 가능
+     기본       = reviewReasons 가 빈 항목. 배지를 달지 않습니다.
+                 배지는 예외 표시이지 상태 표시가 아닙니다
+     warn      = "확인 필요". 읽고 넘어가면 저장 가능 — Amber
                  (due_unparseable / blocked / conditional / ambiguous_intent)
-     ask       = 되묻기. 값을 받아야 저장 가능
+     ask       = "입력 필요". 빈칸을 채워야 저장 가능 — accent 와 같은 Emerald
                  (no_assignee / assignee_unknown / unit_unclear /
                   assignee_unmatched / duplicate_name)
-     reject    = 환각 탐지로 탈락한 항목. 감추지 않고 드러냅니다
+     excluded  = 원문 대조에 실패해 제외된 항목. 건수만 조용히 알립니다.
+                 사용자 잘못이 아니므로 빨강을 쓰지 않습니다 — Mist
      superseded= 번복된 결정. 취소선 + supersededQuote 병기 */
   --color-warn:          var(--amber-500);
   --color-warn-bg:       var(--amber-50);
   --color-warn-border:   var(--amber-200);
   --color-warn-text:     var(--amber-900);
 
-  --color-ask:           var(--emerald-500);
-  --color-ask-bg:        var(--emerald-50);
-  --color-ask-border:    var(--emerald-200);
+  /* 되묻기는 강조색과 같은 Emerald 계열로 통일합니다.
+     "사용자가 손댈 곳"은 전부 Emerald — 버튼이든 입력 요청이든.
+     accent 를 그대로 참조하므로 강조색을 바꾸면 되묻기도 같이 따라옵니다. */
+  --color-ask:           var(--color-accent);
+  --color-ask-bg:        var(--color-accent-subtle);
+  --color-ask-border:    var(--color-accent-border);
   --color-ask-text:      var(--emerald-900);
 
-  --color-reject:        var(--rose-500);
-  --color-reject-bg:     var(--rose-50);
-  --color-reject-border: var(--rose-200);
-  --color-reject-text:   var(--rose-900);
+  --color-excluded:        var(--mist-400);
+  --color-excluded-bg:     var(--color-surface-muted);
+  --color-excluded-border: var(--color-border);
+  --color-excluded-text:   var(--color-text-muted);
 
   --color-superseded-text:   var(--mist-400);
   --color-superseded-stroke: var(--mist-400);
@@ -212,15 +212,15 @@
     --color-warn-border: var(--amber-700);
     --color-warn-text:   var(--amber-200);
 
-    --color-ask:        var(--emerald-400);
-    --color-ask-bg:     var(--emerald-950);
-    --color-ask-border: var(--emerald-800);
+    --color-ask:        var(--color-accent);
+    --color-ask-bg:     var(--color-accent-subtle);
+    --color-ask-border: var(--color-accent-border);
     --color-ask-text:   var(--emerald-200);
 
-    --color-reject:        var(--rose-500);
-    --color-reject-bg:     oklch(41% 0.159 10.272 / 0.25);
-    --color-reject-border: var(--rose-700);
-    --color-reject-text:   var(--rose-200);
+    --color-excluded:        var(--mist-500);
+    --color-excluded-bg:     var(--color-surface-muted);
+    --color-excluded-border: var(--color-border);
+    --color-excluded-text:   var(--color-text-muted);
 
     --color-superseded-text:   var(--mist-500);
     --color-superseded-stroke: var(--mist-500);
@@ -255,13 +255,14 @@
   --color-warn-bg:        oklch(41.4% 0.112 45.904 / 0.25);
   --color-warn-border:    var(--amber-700);
   --color-warn-text:      var(--amber-200);
-  --color-ask:            var(--emerald-400);
-  --color-ask-bg:         var(--emerald-950);
-  --color-ask-border:     var(--emerald-800);
+  --color-ask:            var(--color-accent);
+  --color-ask-bg:         var(--color-accent-subtle);
+  --color-ask-border:     var(--color-accent-border);
   --color-ask-text:       var(--emerald-200);
-  --color-reject-bg:      oklch(41% 0.159 10.272 / 0.25);
-  --color-reject-border:  var(--rose-700);
-  --color-reject-text:    var(--rose-200);
+  --color-excluded:       var(--mist-500);
+  --color-excluded-bg:    var(--color-surface-muted);
+  --color-excluded-border: var(--color-border);
+  --color-excluded-text:  var(--color-text-muted);
   --color-superseded-text:   var(--mist-500);
   --color-superseded-stroke: var(--mist-500);
 }
