@@ -1,0 +1,126 @@
+/* 원시 팔레트를 직접 쓰지 않습니다. 의미 토큰만 참조합니다. */
+
+.page {
+  max-width: var(--width-content);
+  margin: 0 auto;
+  padding: var(--space-12) var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.header { display: flex; flex-direction: column; gap: var(--space-2); }
+
+.title {
+  font-size: var(--text-2xl);
+  line-height: var(--leading-2xl);
+  font-weight: var(--weight-semibold);
+}
+
+.subtitle {
+  font-size: var(--text-base);
+  line-height: var(--leading-base);
+  color: var(--color-text-muted);
+}
+
+.main { display: flex; flex-direction: column; gap: var(--space-4); }
+
+.label {
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-muted);
+}
+
+.input {
+  min-height: 240px;
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: var(--border-thin) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-base);
+  line-height: var(--leading-base);
+  resize: vertical;
+}
+
+.input::placeholder { color: var(--color-text-subtle); }
+
+.button {
+  align-self: flex-start;
+  height: var(--control-height-md);
+  padding: 0 var(--space-6);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease);
+}
+
+.button:hover  { background: var(--color-accent-hover); }
+.button:active { background: var(--color-accent-active); }
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-lg);
+}
+
+.legend-title {
+  flex-basis: 100%;
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  height: var(--space-6);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-full);
+  border: var(--border-thin) solid;
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  font-weight: var(--weight-medium);
+}
+
+.badge--warn {
+  background: var(--color-warn-bg);
+  border-color: var(--color-warn-border);
+  color: var(--color-warn-text);
+}
+
+.badge--ask {
+  background: var(--color-ask-bg);
+  border-color: var(--color-ask-border);
+  color: var(--color-ask-text);
+}
+
+.badge--reject {
+  background: var(--color-reject-bg);
+  border-color: var(--color-reject-border);
+  color: var(--color-reject-text);
+}
+
+.superseded {
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-superseded-text);
+  text-decoration: line-through;
+  text-decoration-color: var(--color-superseded-stroke);
+}
+
+.legend-note {
+  flex-basis: 100%;
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-subtle);
+}
