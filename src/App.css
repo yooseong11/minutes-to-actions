@@ -295,12 +295,6 @@
   color: var(--color-text-muted);
 }
 
-/* 후보가 정확히 1명일 때만. 2명 이상이면 아무것도 고르지 않습니다. */
-.chip--preselect {
-  border-color: var(--color-accent-border);
-  background: var(--color-accent-subtle);
-  color: var(--color-accent-text);
-}
 
 .badges {
   display: flex;
@@ -479,4 +473,29 @@ button.chip[aria-pressed="true"] { border-color: var(--color-accent-border); bac
   .doc-title { flex-wrap: wrap; }
   .doc-note { margin-left: 0; }
   .field-value { min-width: 0; overflow-wrap: anywhere; }
+}
+
+/* 카드 조작과 담당자 정보는 색과 형태를 구분합니다. */
+.button--edit {
+  color: var(--color-text);
+  background: var(--color-surface);
+  border-color: var(--color-border-strong);
+}
+.button--edit:hover, .button--edit:active { background: var(--color-surface-muted); }
+.button--danger {
+  color: var(--color-danger-text);
+  background: var(--color-danger-bg);
+  border-color: var(--color-danger-border);
+}
+.button--danger:hover, .button--danger:active { background: var(--color-danger-hover); }
+.button--clear { background: transparent; border-color: transparent; padding-inline: var(--space-2); }
+.assignee-candidate {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-2);
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
 }

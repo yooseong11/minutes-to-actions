@@ -26,8 +26,8 @@ export default function ItemCard({ item, attendees, onEdit, onDelete }: {
       const patch: ItemPatch = {}
       if (values.content !== item.content) patch.content = values.content
       if (values.type !== item.type) patch.type = values.type
-      if (JSON.stringify(values.assignee) !== JSON.stringify(item.assignee)) patch.assignee = values.assignee
-      if (values.due !== item.due) patch.due = values.due
+      if (values.clearedFields?.includes('assignee') || JSON.stringify(values.assignee) !== JSON.stringify(item.assignee)) patch.assignee = values.assignee
+      if (values.clearedFields?.includes('due') || values.due !== item.due) patch.due = values.due
       onEdit(patch)
       setEditing(false)
     }} />
@@ -44,8 +44,8 @@ export default function ItemCard({ item, attendees, onEdit, onDelete }: {
       <div className="item-toolbar">
         <span className="hint">{item.userCreated ? '직접 추가한 안건' : item.editedFields?.length ? '사용자가 수정한 안건' : ''}</span>
         <div className="actions">
-          <button type="button" className="button button--quiet" onClick={() => setEditing(true)}>수정</button>
-          <button type="button" className="button button--quiet" onClick={onDelete}>안건 삭제</button>
+          <button type="button" className="button button--quiet button--edit" onClick={() => setEditing(true)}>수정</button>
+          <button type="button" className="button button--quiet button--danger" onClick={onDelete}>삭제</button>
         </div>
       </div>
       <p className={struck ? 'item-content superseded' : 'item-content'}>{item.content}</p>
@@ -55,8 +55,7 @@ export default function ItemCard({ item, attendees, onEdit, onDelete }: {
           <dt className="field-key">담당자</dt>
           <dd className="field-value">
             <Assignee item={item} />
-            {(item.assignee || ((item.assigneeRaw || item.assigneeCandidates.length > 0) && !item.editedFields?.includes('assignee'))) ?
-              <button type="button" className="button button--quiet" onClick={() => onEdit({ assignee: null })}>담당자 삭제</button> : null}
+
           </dd>
         </div>
 
@@ -64,8 +63,7 @@ export default function ItemCard({ item, attendees, onEdit, onDelete }: {
           <dt className="field-key">기한</dt>
           <dd className="field-value">
             <Due item={item} />
-            {(item.due || (item.dueDateRaw && !item.editedFields?.includes('due'))) &&
-              <button type="button" className="button button--quiet" onClick={() => onEdit({ due: null })}>기한 삭제</button>}
+
           </dd>
         </div>
 
@@ -121,10 +119,11 @@ function Assignee({ item }: { item: EditableItem }) {
         <span className="field-empty">—</span>
         {item.assigneeRaw && <span className="field-raw">원문 “{item.assigneeRaw}”</span>}
         <span className="chips">
+          <span className="field-raw">후보</span>
           {item.assigneeCandidates.map((c) => (
             <span
               key={`${c.nameRaw}|${c.contextRaw ?? ''}`}
-              className={item.preselect ? 'chip chip--preselect' : 'chip'}
+              className="assignee-candidate"
             >
               {c.nameRaw}
               {c.contextRaw && ` (${c.contextRaw})`}

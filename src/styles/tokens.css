@@ -306,3 +306,25 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* 삭제 동작은 검토 경고와 구분합니다. */
+:root {
+  --color-danger-text: #b42332;
+  --color-danger-bg: #fff1f2;
+  --color-danger-border: #f4bdc4;
+  --color-danger-hover: #ffe1e5;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --color-danger-text: #ff9ca8;
+    --color-danger-bg: #351c23;
+    --color-danger-border: #74353f;
+    --color-danger-hover: #4b232c;
+  }
+}
+:root[data-theme='dark'] {
+  --color-danger-text: #ff9ca8;
+  --color-danger-bg: #351c23;
+  --color-danger-border: #74353f;
+  --color-danger-hover: #4b232c;
+}
