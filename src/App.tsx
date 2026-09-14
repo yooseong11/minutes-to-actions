@@ -62,7 +62,16 @@ export default function App() {
         />
 
         <div className="actions">
-          <button className="button" type="button" onClick={submit} disabled={loading}>
+          <button
+            className="button"
+            type="button"
+            onClick={submit}
+            disabled={loading}
+            aria-busy={loading}
+          >
+            {/* 스피너는 장식입니다. 상태는 버튼 글자와 aria-busy가 말합니다 —
+                읽어주는 화면에는 도는 그림이 안 보이므로 aria-hidden으로 뺍니다. */}
+            {loading && <span className="spinner" aria-hidden="true" />}
             {loading ? '추출하는 중…' : '추출하기'}
           </button>
           {loading && <span className="hint">최대 45초 걸릴 수 있어요.</span>}

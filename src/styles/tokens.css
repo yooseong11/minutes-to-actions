@@ -173,6 +173,7 @@
   --ease: cubic-bezier(0.2, 0, 0.2, 1);
   --duration-fast: 120ms;
   --duration-base: 200ms;
+  --duration-slow: 700ms;  /* 로딩 스피너 1회전. 상태 표시용이라 조작 피드백보다 느립니다 */
 
   --z-base: 0;
   --z-sticky: 100;

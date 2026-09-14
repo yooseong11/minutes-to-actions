@@ -94,7 +94,7 @@ export default function ResultDoc({
                 ))}
               </div>
             )}
-            <button type="button" className="button button--quiet" onClick={() => onAdd(s.type)}>+ {s.type === 'decision' ? '결정' : s.type === 'action' ? '할 일' : '미결'} 안건 추가</button>
+            <button type="button" className="button button--add" onClick={() => onAdd(s.type)}>+ {s.type === 'decision' ? '결정' : s.type === 'action' ? '할 일' : '미결'} 안건 추가</button>
           </Section>
         )
       })}

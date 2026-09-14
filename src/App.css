@@ -47,6 +47,10 @@
 
 .button {
   align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
   height: var(--control-height-md);
   padding: 0 var(--space-6);
   background: var(--color-accent);
@@ -61,6 +65,30 @@
 
 .button:hover  { background: var(--color-accent-hover); }
 .button:active { background: var(--color-accent-active); }
+
+/* 추출 중 표시. 화면을 덮는 오버레이는 쓰지 않습니다 —
+   기다리는 곳과 알려주는 곳이 다르면 사용자가 눈을 옮겨야 합니다.
+   테두리 2px은 --border-thin과 같은 헤어라인 예외입니다. 16px 원에서 1px은 안 보입니다. */
+.spinner {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid color-mix(in srgb, var(--color-on-accent) 30%, transparent);
+  border-top-color: var(--color-on-accent);
+  border-radius: var(--radius-full);
+  animation: spinner-rotate var(--duration-slow) linear infinite;
+}
+
+@keyframes spinner-rotate {
+  to { transform: rotate(360deg); }
+}
+
+/* tokens.css가 prefers-reduced-motion에서 모든 애니메이션을 !important로 끕니다.
+   0.01ms 무한 반복은 깜빡임이 되므로, 여기서는 회전을 아예 멈춘 정적 고리로 둡니다.
+   표시 자체를 지우지는 않습니다 — 눌렸다는 신호가 버튼 글자 하나만 남습니다. */
+@media (prefers-reduced-motion: reduce) {
+  .spinner { animation: none; }
+}
 
 .legend {
   display: flex;
