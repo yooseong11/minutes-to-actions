@@ -1,0 +1,14 @@
+{
+  "name": "minutes-to-actions",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "node --experimental-strip-types --test tests/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.2",
+    "typescript": "^5.9.3"
+  }
+}
