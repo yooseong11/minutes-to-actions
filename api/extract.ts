@@ -116,7 +116,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
         max_output_tokens: 24_000,
         text: { format: { type: 'json_schema', name: 'meeting_extraction', strict: true, schema: EXTRACTION_SCHEMA } },
       }),
-      signal: AbortSignal.timeout(45_000),
+      // 함수 한도(maxDuration)가 60초다. 응답을 받아 후처리할 여유 5초를 남기고
+      // 그 앞까지 기다린다. effort를 high로 올리면서 45초로는 모자랐다.
+      signal: AbortSignal.timeout(55_000),
     })
 
     if (!response.ok) {
