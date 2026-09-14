@@ -1,5 +1,7 @@
 import { SECTIONS } from '../lib/labels.js'
-import type { MeetingDateSource, ProcessedMeeting } from '../lib/postprocess.js'
+import type { MeetingDateSource } from '../lib/postprocess.js'
+import type { EditableMeeting, ItemPatch } from '../lib/edit.js'
+import type { ItemType } from '../lib/types.js'
 import ItemCard from './ItemCard.js'
 
 /**
@@ -25,9 +27,13 @@ import ItemCard from './ItemCard.js'
 export default function ResultDoc({
   meeting,
   dateSourceLabel,
+  onEdit, onDelete, onAdd,
 }: {
-  meeting: ProcessedMeeting
+  meeting: EditableMeeting
   dateSourceLabel: Record<MeetingDateSource, string>
+  onEdit: (id: string, patch: ItemPatch) => void
+  onDelete: (id: string) => void
+  onAdd: (type: ItemType) => void
 }) {
   return (
     <div className="doc">
@@ -83,10 +89,11 @@ export default function ResultDoc({
             ) : (
               <div className="items">
                 {items.map((i) => (
-                  <ItemCard key={i.id} item={i} />
+                  <ItemCard key={i.id} item={i} attendees={meeting.attendees} onEdit={patch => onEdit(i.id, patch)} onDelete={() => onDelete(i.id)} />
                 ))}
               </div>
             )}
+            <button type="button" className="button button--quiet" onClick={() => onAdd(s.type)}>+ {s.type === 'decision' ? '결정' : s.type === 'action' ? '할 일' : '미결'} 안건 추가</button>
           </Section>
         )
       })}

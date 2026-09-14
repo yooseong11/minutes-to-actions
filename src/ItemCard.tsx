@@ -1,4 +1,7 @@
-import type { ProcessedItem } from '../lib/postprocess.js'
+import { useState } from 'react'
+import type { EditableItem, ItemPatch } from '../lib/edit.js'
+import type { RawAttendee } from '../lib/types.js'
+import ItemForm from './ItemForm.js'
 import { REVIEW_REASON } from '../lib/labels.js'
 
 /**
@@ -12,9 +15,24 @@ import { REVIEW_REASON } from '../lib/labels.js'
  *
  * 분류(결정/할 일/미결)는 여기서 안 그립니다. 섹션 제목이 이미 말하고 있습니다.
  *
- * 되묻기(빈칸 채우기)는 섹션 4입니다. 여기서는 "무엇을 물어봐야 하는지"까지만 보여줍니다.
+ * 수정한 값은 원문 근거와 구분하고, 삭제한 필드는 미지정으로 표시합니다.
  */
-export default function ItemCard({ item }: { item: ProcessedItem }) {
+export default function ItemCard({ item, attendees, onEdit, onDelete }: {
+  item: EditableItem; attendees: RawAttendee[]; onEdit: (patch: ItemPatch) => void; onDelete: () => void
+}) {
+  const [editing, setEditing] = useState(false)
+  if (editing) return <article className="item">
+    <ItemForm initial={item} attendees={attendees} onCancel={() => setEditing(false)} onSave={values => {
+      const patch: ItemPatch = {}
+      if (values.content !== item.content) patch.content = values.content
+      if (values.type !== item.type) patch.type = values.type
+      if (JSON.stringify(values.assignee) !== JSON.stringify(item.assignee)) patch.assignee = values.assignee
+      if (values.due !== item.due) patch.due = values.due
+      onEdit(patch)
+      setEditing(false)
+    }} />
+    {item.quote && <p className="item-quote-text">원문 근거: {item.quote}</p>}
+  </article>
   const badges = item.reviewReasons
     .map((r) => REVIEW_REASON[r])
     .filter((r) => r !== undefined && r.kind !== 'strike')
@@ -23,6 +41,13 @@ export default function ItemCard({ item }: { item: ProcessedItem }) {
 
   return (
     <article className="item">
+      <div className="item-toolbar">
+        <span className="hint">{item.userCreated ? '직접 추가한 안건' : item.editedFields?.length ? '사용자가 수정한 안건' : ''}</span>
+        <div className="actions">
+          <button type="button" className="button button--quiet" onClick={() => setEditing(true)}>수정</button>
+          <button type="button" className="button button--quiet" onClick={onDelete}>안건 삭제</button>
+        </div>
+      </div>
       <p className={struck ? 'item-content superseded' : 'item-content'}>{item.content}</p>
 
       <dl className="fields">
@@ -30,6 +55,8 @@ export default function ItemCard({ item }: { item: ProcessedItem }) {
           <dt className="field-key">담당자</dt>
           <dd className="field-value">
             <Assignee item={item} />
+            {(item.assignee || ((item.assigneeRaw || item.assigneeCandidates.length > 0) && !item.editedFields?.includes('assignee'))) ?
+              <button type="button" className="button button--quiet" onClick={() => onEdit({ assignee: null })}>담당자 삭제</button> : null}
           </dd>
         </div>
 
@@ -37,6 +64,8 @@ export default function ItemCard({ item }: { item: ProcessedItem }) {
           <dt className="field-key">기한</dt>
           <dd className="field-value">
             <Due item={item} />
+            {(item.due || (item.dueDateRaw && !item.editedFields?.includes('due'))) &&
+              <button type="button" className="button button--quiet" onClick={() => onEdit({ due: null })}>기한 삭제</button>}
           </dd>
         </div>
 
@@ -63,16 +92,20 @@ export default function ItemCard({ item }: { item: ProcessedItem }) {
       )}
 
       {/* 근거 인용문. 접어 두되 지우지는 않습니다 — 이 항목이 어디서 나왔는지가 근거입니다 */}
-      <details className="item-quote">
+      {item.quote && <details className="item-quote">
         <summary className="item-quote-summary">원문 근거</summary>
         <p className="item-quote-text">{item.quote}</p>
-      </details>
+      </details>}
     </article>
   )
 }
 
 /** 확정된 담당자 > 원문 표현 + 후보 > 없음 */
-function Assignee({ item }: { item: ProcessedItem }) {
+function Assignee({ item }: { item: EditableItem }) {
+  if (item.editedFields?.includes('assignee') || item.userCreated) return <>
+    {item.assignee ? `${item.assignee.nameRaw}${item.assignee.contextRaw ? ` (${item.assignee.contextRaw})` : ''}` : <span className="field-empty">미지정</span>}
+    <span className="field-raw">사용자 입력</span>
+  </>
   if (item.assignee) {
     return (
       <>
@@ -111,7 +144,11 @@ function Assignee({ item }: { item: ProcessedItem }) {
 }
 
 /** 코드가 환산한 날짜 + 원문 표현. 역산이면 기준일까지 */
-function Due({ item }: { item: ProcessedItem }) {
+function Due({ item }: { item: EditableItem }) {
+  if (item.editedFields?.includes('due') || item.userCreated) return <>
+    {item.due ?? <span className="field-empty">미지정</span>}
+    <span className="field-raw">사용자 입력{item.dueDateRaw ? ` · 원문 “${item.dueDateRaw}”` : ''}</span>
+  </>
   if (!item.dueDateRaw) return <span className="field-empty">—</span>
 
   if (item.due === null) {

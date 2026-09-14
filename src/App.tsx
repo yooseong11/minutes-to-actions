@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { countReasons } from '../lib/labels.js'
-import type { MeetingDateSource } from '../lib/postprocess.js'
 import { SAMPLE_01, SAMPLE_01_TEXT } from './fixtures/sample01.js'
-import ResultDoc from './ResultDoc.js'
+import MeetingEditor from './MeetingEditor.js'
 import { useExtract } from './useExtract.js'
 import './App.css'
 
@@ -18,7 +17,7 @@ import './App.css'
  * 배지는 예외에만 답니다. 손댈 게 없는 항목은 아무 표시도 하지 않습니다.
  *   (표시 없음) — 기본. 그대로 저장된다
  *   확인 필요   — 사람이 읽어야 함. 그래도 저장은 된다
- *   입력 필요   — 사람이 빈칸을 채워야 저장이 된다
+ *   입력 필요   — 사람이 보완할 수 있다. 모르면 미지정으로 남긴다
  */
 /**
  * 오늘 날짜를 'YYYY-MM-DD' 로.
@@ -30,34 +29,17 @@ function today(): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
-/** 기준일을 어디서 가져왔는지 사람 말로. 조용히 오늘로 계산하고 넘어가지 않습니다 */
-const DATE_SOURCE_LABEL: Record<MeetingDateSource, string> = {
-  user: '고르신 날짜를 기준으로 계산했어요',
-  document: '회의록 원문에 적힌 날짜를 기준으로 계산했어요',
-  fallback: '원문에 회의 날짜가 없어서 오늘을 기준으로 계산했어요',
-  none: '기준 날짜가 없어서 기한을 환산하지 못했어요',
-}
-
 export default function App() {
   const [text, setText] = useState('')
-  // 사용자가 날짜칸을 직접 고쳤을 때만 값이 들어갑니다. 안 고쳤으면 null.
-  const [pickedDate, setPickedDate] = useState<string | null>(null)
   const { state, extract, showResult } = useExtract()
 
   const loading = state.status === 'loading'
 
-  // 날짜칸에 보이는 값: 고른 값 > 서버가 쓴 기준일 > 오늘.
-  // 서버가 원문에서 9/8을 읽었으면 칸에도 9/8이 올라옵니다. 오늘로 남겨두면
-  // 일주일 밀린 기한이 정상으로 보입니다 (실제로 그랬습니다).
-  const resolvedDate = state.status === 'done' ? state.meeting.meetingDate : null
-  const shownDate = pickedDate ?? resolvedDate ?? today()
-
-  const submit = () => void extract(text, pickedDate, today())
+  const submit = () => void extract(text, null, today())
 
   /** 더미 데이터. 개발 중 화면만 볼 때 토큰을 쓰지 않기 위한 것입니다. */
   const loadSample = () => {
     setText(SAMPLE_01_TEXT)
-    setPickedDate(null)
     showResult(SAMPLE_01)
   }
 
@@ -99,61 +81,7 @@ export default function App() {
         )}
 
         {state.status === 'done' && (
-          <section className="result">
-            <p className="summary">
-              항목 {state.meeting.items.length}개
-              {' · '}손볼 항목 {state.meeting.items.filter((i) => i.confidence === 'needs_review').length}개
-            </p>
-
-            {/* 기한 환산은 전부 이 날짜를 기준으로 역산합니다.
-                기준이 틀리면 기한이 조용히 다 틀리므로 숨기지 않습니다. */}
-            <div className="anchor">
-              <label className="anchor-label" htmlFor="meeting-date">
-                기한 계산 기준일
-              </label>
-              <input
-                id="meeting-date"
-                className="anchor-input"
-                type="date"
-                value={shownDate}
-                onChange={(e) => setPickedDate(e.target.value)}
-              />
-              <button className="button button--quiet" type="button" onClick={submit}>
-                다시 계산
-              </button>
-              {/* 원문 표현과 실제 기준일이 다르면 그 사실을 남깁니다 */}
-              {state.meeting.meetingDateRaw && state.meeting.meetingDateSource !== 'document' && (
-                <span className="hint">원문에는 “{state.meeting.meetingDateRaw}”라고 적혀 있어요.</span>
-              )}
-            </div>
-
-            <ResultDoc meeting={state.meeting} dateSourceLabel={DATE_SOURCE_LABEL} />
-
-            <details className="excluded">
-              <summary className="excluded-summary">
-                원문 대조 실패로 제외됨 {state.meeting.rejected.length}건
-              </summary>
-              <p className="excluded-note">
-                인용문이 원문에 없어 항목에서 뺀 것들입니다. 대부분은 지어낸 내용이지만,
-                줄바꿈 차이 때문에 멀쩡한 항목이 걸리기도 합니다. 조용히 버리면
-                액션아이템 하나가 사라진 걸 모르게 되므로 내용까지 남겨둡니다.
-              </p>
-              {state.meeting.rejected.map((r, i) => (
-                <div className="rejected-item" key={`${r.item.quote}|${i}`}>
-                  <p className="rejected-content">{r.item.content || '(내용 없음)'}</p>
-                  <p className="rejected-quote">
-                    원문에 없던 {r.hallucinated.join(' / ')}: “{r.item.quote}”
-                  </p>
-                </div>
-              ))}
-            </details>
-
-            {/* 카드가 틀렸을 때 대조할 원본. 접어 두되 지우지 않습니다 */}
-            <details className="raw-wrap">
-              <summary className="raw-summary">후처리 결과 원본 (JSON)</summary>
-              <pre className="raw">{JSON.stringify(state.meeting, null, 2)}</pre>
-            </details>
-          </section>
+          <MeetingEditor key={state.resultId} meeting={state.meeting} />
         )}
 
         <section className="legend">
@@ -162,8 +90,8 @@ export default function App() {
           <span className="badge badge--ask">입력 필요</span>
           <span className="superseded">번복됨</span>
           <p className="legend-note">
-            표시가 없으면 그대로 저장됩니다. 확인 필요({countReasons('warn')}종)는 읽고 넘어가면 되고,
-            입력 필요({countReasons('ask')}종)는 빈칸을 채워야 저장됩니다.
+            확인 필요({countReasons('warn')}종)는 원문과 대조해 주세요.
+            입력 필요({countReasons('ask')}종)는 수정 버튼으로 보완할 수 있으며, 모르면 비워둘 수 있습니다.
           </p>
         </section>
       </main>

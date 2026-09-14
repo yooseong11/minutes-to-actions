@@ -17,7 +17,7 @@ import type { ProcessedMeeting } from '../lib/postprocess.js'
 export type ExtractState =
   | { status: 'idle' }
   | { status: 'loading' }
-  | { status: 'done'; meeting: ProcessedMeeting }
+  | { status: 'done'; meeting: ProcessedMeeting; resultId: number }
   | { status: 'error'; message: string }
 
 /** api/extract.ts 의 MAX_TEXT 와 같은 값. 왕복하지 않고 미리 막는다 */
@@ -47,6 +47,7 @@ async function readErrorMessage(response: Response): Promise<string> {
 
 export function useExtract() {
   const [state, setState] = useState<ExtractState>({ status: 'idle' })
+  const resultSequence = useRef(0)
   const inFlight = useRef<AbortController | null>(null)
 
   const reset = useCallback(() => {
@@ -94,7 +95,7 @@ export function useExtract() {
 
       const meeting = (await response.json()) as ProcessedMeeting
       if (controller.signal.aborted) return
-      setState({ status: 'done', meeting })
+      setState({ status: 'done', meeting, resultId: ++resultSequence.current })
     } catch (error) {
       // 사용자가 다시 눌러서 버린 요청은 에러가 아니다
       if (error instanceof DOMException && error.name === 'AbortError') return
@@ -111,7 +112,7 @@ export function useExtract() {
   const showResult = useCallback((meeting: ProcessedMeeting) => {
     inFlight.current?.abort()
     inFlight.current = null
-    setState({ status: 'done', meeting })
+    setState({ status: 'done', meeting, resultId: ++resultSequence.current })
   }, [])
 
   return { state, extract, reset, showResult }
