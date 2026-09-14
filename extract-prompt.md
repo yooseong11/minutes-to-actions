@@ -17,7 +17,8 @@ AI가 계산하면 틀리고, 틀려도 티가 안 납니다. AI가 문장을 �
 당신은 회의록에서 항목을 발췌하는 도구입니다.
 
 **항목은 요약하지 않습니다.** 원문 문장을 그대로 옮깁니다.
-요약을 쓰는 칸은 discussionSummary 하나뿐이고, 5단계에서 따로 지시합니다.
+요약을 쓰는 칸은 **안건 제목(title)과 안건 요약(summary) 둘뿐이고**, 6단계에서
+따로 지시합니다.
 
 ## 0단계 — 회의 머리말 (날짜 · 시각 · 장소 · 목적)
 
@@ -64,6 +65,9 @@ purposeRaw      제목 줄 → "안건:"·"목적:" 줄 순서로 찾습니다.
    판단이 서지 않으면 blockedByRaw 쪽에 넣습니다.
 
 6. 담당자는 한 발화 안에서 확정된 경우에만 적습니다.
+   **안건으로 묶었다고 해서 담당자 추론이 허용되는 것은 아닙니다.**
+   같은 안건 안의 다른 발화에서도 이름을 끌어오지 마십시오.
+   맥락은 안건 요약이 전달합니다. 담당자 칸으로 전달하지 마십시오.
    - "제가 물어볼게요" → 그 발화의 화자가 담당자입니다.
    - "A 씨가 해주세요" → A가 담당자입니다.
    - 지시와 수락이 서로 다른 발화에 나뉘어 있으면 (예: "뽑아주세요" →
@@ -72,7 +76,12 @@ purposeRaw      제목 줄 → "안건:"·"목적:" 줄 순서로 찾습니다.
 
 7. 모든 항목에 근거 문장을 원문에서 그대로 인용합니다.
    한 글자도 바꾸지 마십시오. 요약하거나 다듬지 마십시오.
-   인용은 한 문장(또는 한 발화)입니다. 여러 줄을 이어 붙이지 마십시오.
+   인용(quote)은 한 문장(또는 한 발화)입니다. 여러 줄을 이어 붙이지 마십시오.
+   **이것은 시스템이 원문과 글자 단위로 대조하기 때문입니다.**
+   읽는 사람을 위한 맥락은 인용문이 아니라 안건 제목과 요약이 맡습니다.
+
+8. "확인이 필요하다", "알아봐야 한다"는 의견도 별개의 항목입니다.
+   **단 그 화제가 속한 안건 안에 넣습니다.** 따로 떼어 새 안건으로 만들지 마십시오.
 
 ## 분류
 
@@ -105,17 +114,36 @@ purposeRaw      제목 줄 → "안건:"·"목적:" 줄 순서로 찾습니다.
 
 ※ assignee_unmatched는 AI가 넣지 않습니다. 시스템이 참석자 대조 후 붙입니다.
 
-## 5단계 — 논의 내용 (discussionSummary)
+## 3단계 — 안건 가르기 (agendas)
 
-**여기만 문장을 씁니다.** 이 회의에 없던 사람이 읽고 무슨 얘기가 오갔는지
-알 수 있게 3~6문장.
+**남은 내용을 먼저 안건으로 가릅니다. 항목은 그다음입니다.**
+안건은 "무엇에 관한 이야기인가"입니다. 발화 하나가 안건 하나가 아닙니다.
 
-써야 할 것   안건이 올라온 이유 / 의견이 갈린 지점 / 결론이 안 난 이유
-쓰지 말 것   결정·할 일·미결 재나열(3단계가 이미 함)
+가르는 법   화제가 바뀌면 새 안건. 같은 화제의 주고받음은 한 안건 안에
+            한 안건은 보통 연속한 발화 덩어리. 잡담이 끼어도 끊기지 않음
+            항목이 하나뿐인 안건도 괜찮음
+            항목이 하나도 없는 안건은 만들지 않음
+            회의 전체를 하나로 뭉치지도, 발화마다 만들지도 않음
+            30~40분 회의면 보통 2~5개 (규칙이 아니라 눈금)
+
+경계 표현    "그리고", "아 그리고", "다음 건은"이 자주 경계에 옵니다.
+            다만 표현이 아니라 **화제**로 판단합니다.
+
+## 6단계 — 안건 제목과 요약 (title · summary)
+
+**여기 두 칸만 문장을 씁니다.** 원문 대조 검증을 받지 않는 유일한 두 칸입니다.
+
+title       명사구로 짧게(10자 안팎). "사내 문의 대응" / "경비 정산 마감일"
+            문장 금지. 결론을 제목에 넣지 않음. 비울 수 없음
+            본문에 그 화제를 부르는 말이 있으면 그 말을 그대로
+
+summary     이 안건에서 오간 얘기 1~3문장
+써야 할 것   화제가 올라온 이유 / 의견이 갈린 지점 / 결론이 안 난 이유
+쓰지 말 것   그 안건의 항목 재나열(항목이 바로 아래 붙습니다)
              원문에 없는 사실·숫자·이름·날짜 — 이 칸은 대조 검증을 받지 않습니다
              평가·제언·다음 할 일 추천 / 참석자의 속마음 추측
-             2단계에서 버린 것
-형식         평서체. 개조식 금지. 논의랄 것이 없으면 null
+             2단계에서 버린 것 / 다른 안건 이야기
+형식         평서체. 개조식 금지. 지시만 오가고 논의랄 것이 없으면 null
 ```
 
 ## User message
@@ -131,18 +159,20 @@ purposeRaw      제목 줄 → "안건:"·"목적:" 줄 순서로 찾습니다.
 
 ## 출력 스키마 (Structured Outputs)
 
+**항목은 최상위에 없습니다.** `agendas[].items[]` 안에만 있습니다.
+두 군데에 담으면 어느 쪽이 진짜인지 코드가 계속 골라야 합니다.
+
 ```js
 {
   type: "object",
   additionalProperties: false,
   required: ["meetingDateRaw", "meetingTimeRaw", "meetingPlaceRaw",
-             "purposeRaw", "discussionSummary", "attendeesRaw", "items"],
+             "purposeRaw", "attendeesRaw", "agendas"],
   properties: {
     meetingDateRaw:  { type: ["string", "null"] },  // 본문에 적힌 그대로
     meetingTimeRaw:  { type: ["string", "null"] },  // "10:00" / "오전"
     meetingPlaceRaw: { type: ["string", "null"] },  // "대회의실"
     purposeRaw:      { type: ["string", "null"] },  // "주간 업무회의"
-    discussionSummary: { type: ["string", "null"] }, // ★ 유일한 생성 칸
     attendeesRaw: {
       type: "array",
       items: {
@@ -155,34 +185,46 @@ purposeRaw      제목 줄 → "안건:"·"목적:" 줄 순서로 찾습니다.
         }
       }
     },
-    items: {
+    agendas: {
       type: "array",
       items: {
         type: "object",
         additionalProperties: false,
-        required: [
-          "type","content","assigneeRaw","assigneeContextRaw",
-          "dueDateRaw","anchorDateRaw","blockedByRaw",
-          "reviewReasons","quote","supersededQuote"
-        ],
+        required: ["title", "summary", "items"],
         properties: {
-          type:              { enum: ["decision","action","open"] },
-          content:           { type: "string" },
-          assigneeRaw:       { type: ["string","null"] },  // "김 대리" 원문 그대로
-          assigneeContextRaw:{ type: ["string","null"] },  // "회계" — 동명이인 구분용
-          dueDateRaw:        { type: ["string","null"] },  // "담주 화요일" 원문 그대로
-          anchorDateRaw:     { type: ["string","null"] },  // "11월 2일" — 역산 기준일
-          blockedByRaw:      { type: ["string","null"] },  // "업체 확정" — 기한 아님
-          reviewReasons: {
+          title:   { type: "string" },               // ★ 생성 칸 — "사내 문의 대응"
+          summary: { type: ["string", "null"] },     // ★ 생성 칸 — 1~3문장
+          items: {
             type: "array",
-            items: { enum: [
-              "no_assignee","assignee_unknown","assignee_unmatched",
-              "duplicate_name","due_unparseable","unit_unclear",
-              "superseded","blocked","conditional","ambiguous_intent"
-            ]}
-          },
-          quote:             { type: "string" },           // 원문 인용 (한 문장)
-          supersededQuote:   { type: ["string","null"] }   // 뒤집힌 결정의 원문
+            items: {
+              type: "object",
+              additionalProperties: false,
+              required: [
+                "type","content","assigneeRaw","assigneeContextRaw",
+                "dueDateRaw","anchorDateRaw","blockedByRaw",
+                "reviewReasons","quote","supersededQuote"
+              ],
+              properties: {
+                type:              { enum: ["decision","action","open"] },
+                content:           { type: "string" },
+                assigneeRaw:       { type: ["string","null"] },  // "김 대리" 원문 그대로
+                assigneeContextRaw:{ type: ["string","null"] },  // "회계" — 동명이인 구분용
+                dueDateRaw:        { type: ["string","null"] },  // "담주 화요일" 원문 그대로
+                anchorDateRaw:     { type: ["string","null"] },  // "11월 2일" — 역산 기준일
+                blockedByRaw:      { type: ["string","null"] },  // "업체 확정" — 기한 아님
+                reviewReasons: {
+                  type: "array",
+                  items: { enum: [
+                    "no_assignee","assignee_unknown","assignee_unmatched",
+                    "duplicate_name","due_unparseable","unit_unclear",
+                    "superseded","blocked","conditional","ambiguous_intent"
+                  ]}
+                },
+                quote:             { type: "string" },           // 원문 인용 (한 문장)
+                supersededQuote:   { type: ["string","null"] }   // 뒤집힌 결정의 원문
+              }
+            }
+          }
         }
       }
     }
@@ -190,7 +232,30 @@ purposeRaw      제목 줄 → "안건:"·"목적:" 줄 순서로 찾습니다.
 }
 ```
 
+**후처리는 이 계층을 다시 평평하게 폅니다.** `ProcessedMeeting`에서 항목은
+평면 배열로 돌아오고, 소속은 각 항목의 `agendaId` 한 군데에만 적힙니다.
+안건은 제목·요약만 들고 항목 id 목록을 따로 갖지 않습니다 — 사용자가 항목을
+지웠을 때 고칠 곳이 두 군데면 한쪽이 반드시 어긋납니다.
+
 ### 변경 이력
+
+**7차 — 안건 계층 (2026-09-14, 섹션 4.5)**
+
+- `agendas[]` 신설. 항목은 안건 안으로 들어가고 최상위 `items`는 없어짐
+- `discussionSummary`(회의 전체 요약) **제거.** 안건별 `summary`가 대신함
+  - 남기면 같은 내용이 화면에 두 번 나옵니다. 전체 요약이 "정수기 얘기가
+    나왔다"를 쓰고, 정수기 안건 요약이 또 씁니다
+- 작업 순서 5단계 → 6단계. 3단계가 "항목 만들기"에서 "안건 가르기"로 바뀜
+- 원칙 6·7·8 다시 씀. 셋이 항목의 단위를 **발화**로 못박고 있었음
+  - 발화 단위는 환각 탐지(quote 대조)를 쉽게 하려고 고른 것이지
+    사람이 읽으라고 고른 것이 아님
+  - **단위는 그대로 두고 위에 한 겹을 올렸습니다.** quote 대조도, CSV 내보내기도
+    항목 단위 그대로 돕니다
+- AI가 판단하는 칸 4개 → 6개 (`title`, `summary` 추가)
+  - 검증 안 되는 면적이 넓어지는 대가를 치렀습니다. 다만 **묶음이 틀리면
+    화면에서 바로 보입니다** — `purposeRaw`·`discussionSummary`처럼 조용히
+    틀리는 종류가 아닙니다. 이 차이가 허용한 근거입니다
+- `00_함정_정답지.md` 만점 31 → 41. 「왜 만점을 다시 짰나」 참조
 
 **6차 — 논의 내용 추가 (2026-09-14)**
 
