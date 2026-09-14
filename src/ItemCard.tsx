@@ -1,5 +1,5 @@
 import type { ProcessedItem } from '../lib/postprocess.js'
-import { ITEM_TYPE, REVIEW_REASON } from '../lib/labels.js'
+import { REVIEW_REASON } from '../lib/labels.js'
 
 /**
  * 항목 카드 하나.
@@ -9,6 +9,8 @@ import { ITEM_TYPE, REVIEW_REASON } from '../lib/labels.js'
  *   - `superseded`는 배지가 아니라 취소선입니다. 항목의 상태이지 할 일이 아닙니다.
  *   - 코드가 환산한 값(기한·담당자) 옆에 **원문 표현을 같이 둡니다.**
  *     환산이 틀렸을 때 원문이 없으면 틀린 걸 알아볼 방법이 없습니다.
+ *
+ * 분류(결정/할 일/미결)는 여기서 안 그립니다. 섹션 제목이 이미 말하고 있습니다.
  *
  * 되묻기(빈칸 채우기)는 섹션 4입니다. 여기서는 "무엇을 물어봐야 하는지"까지만 보여줍니다.
  */
@@ -21,10 +23,7 @@ export default function ItemCard({ item }: { item: ProcessedItem }) {
 
   return (
     <article className="item">
-      <div className="item-head">
-        <span className={`type type--${item.type}`}>{ITEM_TYPE[item.type]}</span>
-        <p className={struck ? 'item-content superseded' : 'item-content'}>{item.content}</p>
-      </div>
+      <p className={struck ? 'item-content superseded' : 'item-content'}>{item.content}</p>
 
       <dl className="fields">
         <div className="field">

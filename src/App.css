@@ -237,26 +237,6 @@
   border-radius: var(--radius-lg);
 }
 
-.item-head { display: flex; align-items: flex-start; gap: var(--space-3); }
-
-/* 분류는 정보이지 경고가 아닙니다. 배지와 다른 모양으로 둡니다. */
-.type {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  height: var(--space-6);
-  padding: 0 var(--space-2);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface-muted);
-  color: var(--color-text-muted);
-  font-size: var(--text-xs);
-  line-height: var(--leading-xs);
-  font-weight: var(--weight-medium);
-  white-space: nowrap;
-}
-
-.type--decision { background: var(--color-accent-subtle); color: var(--color-accent-text); }
-
 .item-content {
   font-size: var(--text-base);
   line-height: var(--leading-base);
@@ -269,8 +249,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  padding-left: calc(var(--space-6) + var(--space-3));
-}
+  }
 
 .field { display: flex; align-items: baseline; gap: var(--space-3); }
 
@@ -327,12 +306,10 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
-  padding-left: calc(var(--space-6) + var(--space-3));
-}
+  }
 
 .item-note {
-  padding-left: calc(var(--space-6) + var(--space-3));
-  font-size: var(--text-xs);
+    font-size: var(--text-xs);
   line-height: var(--leading-sm);
   color: var(--color-text-muted);
 }
@@ -402,3 +379,68 @@
 }
 
 .raw-wrap .raw { margin-top: var(--space-3); }
+
+
+/* ---- 회의록 문서 ---------------------------------------------------------- */
+
+.doc { display: flex; flex-direction: column; gap: var(--space-8); }
+
+.doc-section { display: flex; flex-direction: column; gap: var(--space-3); }
+
+.doc-title {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding-bottom: var(--space-2);
+  border-bottom: var(--border-thin) solid var(--color-divider);
+  font-size: var(--text-lg);
+  line-height: var(--leading-lg);
+  font-weight: var(--weight-semibold);
+}
+
+.doc-count {
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.doc-note {
+  margin-left: auto;
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  font-weight: var(--weight-regular);
+  color: var(--color-text-subtle);
+}
+
+.doc-line {
+  font-size: var(--text-base);
+  line-height: var(--leading-base);
+}
+
+/* 빈 칸도 제목을 남깁니다. 지우면 뭐가 빠졌는지 안 보입니다. */
+.doc-empty {
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-text-subtle);
+}
+
+/* 아직 안 만든 칸. 값이 비어 있는 것과 기능이 없는 것은 다릅니다. */
+.doc-todo {
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  line-height: var(--leading-sm);
+  color: var(--color-text-muted);
+}
+
+.doc-todo code {
+  padding: 0 var(--space-1);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text);
+}
+
+.tpo { display: flex; flex-direction: column; gap: var(--space-2); }

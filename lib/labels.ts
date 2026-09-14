@@ -40,6 +40,19 @@ export const ITEM_TYPE: Record<ItemType, string> = {
   open: '미결',
 }
 
+/**
+ * 회의록 5대 필수 요소 중 **항목으로 나뉘는 세 칸.**
+ *   Joiner(참석자)와 TPO는 항목이 아니라 회의 메타데이터라 따로 렌더합니다.
+ *
+ * 순서는 읽는 순서입니다 — 정해진 것(Done) → 할 것(WILL DO) → 안 정해진 것(TBD).
+ * 섹션 5 마크다운 내보내기도 이 순서와 제목을 그대로 씁니다.
+ */
+export const SECTIONS: { type: ItemType; title: string; note: string; empty: string }[] = [
+  { type: 'decision', title: '결정사항 (Done)', note: '확정된 것. 번복된 건 TBD로 내려갑니다', empty: '확정된 결정이 없습니다.' },
+  { type: 'action', title: '할 일 (WILL DO)', note: '누가 · 언제까지 · 무엇을', empty: '할 일로 잡힌 것이 없습니다.' },
+  { type: 'open', title: 'TBD', note: '논의가 끝나지 않은 아젠다', empty: '미결로 남은 것이 없습니다.' },
+]
+
 /** 해당 종류의 사유 개수. 범례 문구가 숫자를 직접 세지 않도록 */
 export function countReasons(kind: ReasonKind): number {
   return Object.values(REVIEW_REASON).filter((r) => r.kind === kind).length

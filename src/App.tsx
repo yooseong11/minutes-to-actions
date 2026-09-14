@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { countReasons } from '../lib/labels.js'
 import type { MeetingDateSource } from '../lib/postprocess.js'
 import { SAMPLE_01, SAMPLE_01_TEXT } from './fixtures/sample01.js'
-import ItemCard from './ItemCard.js'
+import ResultDoc from './ResultDoc.js'
 import { useExtract } from './useExtract.js'
 import './App.css'
 
@@ -102,7 +102,6 @@ export default function App() {
           <section className="result">
             <p className="summary">
               항목 {state.meeting.items.length}개
-              {' · '}참석자 {state.meeting.attendees.length}명
               {' · '}손볼 항목 {state.meeting.items.filter((i) => i.confidence === 'needs_review').length}개
             </p>
 
@@ -110,7 +109,7 @@ export default function App() {
                 기준이 틀리면 기한이 조용히 다 틀리므로 숨기지 않습니다. */}
             <div className="anchor">
               <label className="anchor-label" htmlFor="meeting-date">
-                {DATE_SOURCE_LABEL[state.meeting.meetingDateSource]}
+                기한 계산 기준일
               </label>
               <input
                 id="meeting-date"
@@ -128,15 +127,7 @@ export default function App() {
               )}
             </div>
 
-            {state.meeting.items.length === 0 ? (
-              <p className="empty">항목이 하나도 나오지 않았어요. 원문을 확인해 주세요.</p>
-            ) : (
-              <div className="items">
-                {state.meeting.items.map((it) => (
-                  <ItemCard key={it.id} item={it} />
-                ))}
-              </div>
-            )}
+            <ResultDoc meeting={state.meeting} dateSourceLabel={DATE_SOURCE_LABEL} />
 
             <details className="excluded">
               <summary className="excluded-summary">
