@@ -140,3 +140,85 @@
   line-height: var(--leading-sm);
   color: var(--color-text-subtle);
 }
+
+.actions { display: flex; align-items: center; gap: var(--space-3); }
+
+.button:disabled { opacity: 0.5; cursor: default; }
+.input:disabled { background: var(--color-surface-muted); }
+
+.hint,
+.error {
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+}
+
+.hint { color: var(--color-text-subtle); }
+
+/* 에러는 문구로 말합니다. 빨강 배경으로 겁주지 않습니다. */
+.error {
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-warn-bg);
+  border: var(--border-thin) solid var(--color-warn-border);
+  border-radius: var(--radius-md);
+  color: var(--color-warn-text);
+  line-height: var(--leading-sm);
+}
+
+.result { display: flex; flex-direction: column; gap: var(--space-3); }
+
+.summary {
+  font-size: var(--text-base);
+  line-height: var(--leading-base);
+  font-weight: var(--weight-medium);
+}
+
+.raw {
+  max-height: 480px;
+  overflow: auto;
+  margin: 0;
+  padding: var(--space-4);
+  background: var(--color-surface-sunken);
+  border-radius: var(--radius-lg);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: var(--leading-sm);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* 기준 날짜 — 눈에 띄되 앞길을 막지 않습니다. 붙여넣기 전이 아니라 결과 옆에 둡니다. */
+.anchor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-md);
+}
+
+.anchor-label {
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+}
+
+.anchor-input {
+  height: var(--control-height-sm);
+  padding: 0 var(--space-2);
+  background: var(--color-surface);
+  border: var(--border-thin) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+}
+
+.button--quiet {
+  height: var(--control-height-sm);
+  padding: 0 var(--space-3);
+  background: transparent;
+  border: var(--border-thin) solid var(--color-accent-border);
+  color: var(--color-accent-text);
+  font-size: var(--text-xs);
+}
+
+.button--quiet:hover { background: var(--color-accent-subtle); }
