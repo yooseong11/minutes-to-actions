@@ -1,0 +1,168 @@
+{
+  "meetingDate": "2026-09-08",
+  "meetingDateRaw": "2026-09-08",
+  "meetingDateSource": "document",
+  "meetingTimeRaw": "10:00",
+  "meetingPlaceRaw": "대회의실",
+  "purposeRaw": "주간 업무회의",
+  "discussionSummary": "서류 검토에서는 지원자 41명이 많다는 의견이 나왔다. 법인카드 사용내역은 8월분 정산이 아직 끝나지 않았고 영수증 4건이 누락된 상황이었다. 사무실 정수기는 다음 달 계약 만료를 앞두고 연장과 교체가 논의되었으며, 현재 기기가 자주 고장 난다는 발언과 견적을 받아보고 다시 논의하자는 의견이 나왔다.",
+  "attendees": [
+    {
+      "nameRaw": "박팀장",
+      "contextRaw": null
+    },
+    {
+      "nameRaw": "김민수",
+      "contextRaw": null
+    },
+    {
+      "nameRaw": "이수현",
+      "contextRaw": null
+    },
+    {
+      "nameRaw": "정다은",
+      "contextRaw": null
+    },
+    {
+      "nameRaw": "최영호",
+      "contextRaw": "중간 합류"
+    }
+  ],
+  "items": [
+    {
+      "type": "action",
+      "content": "서류 검토는 김 대리가 이번 주 안에 마무리하기로.",
+      "assigneeRaw": "김 대리",
+      "assigneeContextRaw": null,
+      "dueDateRaw": "이번 주 안에",
+      "anchorDateRaw": null,
+      "blockedByRaw": null,
+      "reviewReasons": [
+        "assignee_unmatched"
+      ],
+      "quote": "서류 검토는 김 대리가 이번 주 안에 마무리하기로.",
+      "supersededQuote": null,
+      "id": "0paj5p9",
+      "due": "2026-09-13",
+      "dueAnchor": null,
+      "dueMethod": "relative",
+      "assignee": null,
+      "assigneeCandidates": [
+        {
+          "nameRaw": "김민수",
+          "contextRaw": null
+        }
+      ],
+      "preselect": true,
+      "confidence": "needs_review"
+    },
+    {
+      "type": "decision",
+      "content": "일단 1차는 혼자 보고, 넘기기 애매한 건 같이 보죠",
+      "assigneeRaw": null,
+      "assigneeContextRaw": null,
+      "dueDateRaw": null,
+      "anchorDateRaw": null,
+      "blockedByRaw": null,
+      "reviewReasons": [],
+      "quote": "팀장님: \"일단 1차는 혼자 보고, 넘기기 애매한 건 같이 보죠\"",
+      "supersededQuote": null,
+      "id": "1o4r7bo",
+      "due": null,
+      "dueAnchor": null,
+      "dueMethod": "none",
+      "assignee": null,
+      "assigneeCandidates": [],
+      "preselect": false,
+      "confidence": "high"
+    },
+    {
+      "type": "action",
+      "content": "해당 사용자들한테 개별로 연락 돌리기로. 이건 정다은 님이.",
+      "assigneeRaw": "정다은",
+      "assigneeContextRaw": null,
+      "dueDateRaw": null,
+      "anchorDateRaw": null,
+      "blockedByRaw": null,
+      "reviewReasons": [],
+      "quote": "→ 해당 사용자들한테 개별로 연락 돌리기로. 이건 정다은 님이.",
+      "supersededQuote": null,
+      "id": "0pkeuzp",
+      "due": null,
+      "dueAnchor": null,
+      "dueMethod": "none",
+      "assignee": {
+        "nameRaw": "정다은",
+        "contextRaw": null
+      },
+      "assigneeCandidates": [],
+      "preselect": false,
+      "confidence": "high"
+    },
+    {
+      "type": "open",
+      "content": "사무실 정수기 계약 만료 다음 달인데 연장할지 교체할지.",
+      "assigneeRaw": null,
+      "assigneeContextRaw": null,
+      "dueDateRaw": null,
+      "anchorDateRaw": null,
+      "blockedByRaw": null,
+      "reviewReasons": [],
+      "quote": "사무실 정수기 계약 만료 다음 달인데 연장할지 교체할지.",
+      "supersededQuote": null,
+      "id": "0zfkl6g",
+      "due": null,
+      "dueAnchor": null,
+      "dueMethod": "none",
+      "assignee": null,
+      "assigneeCandidates": [],
+      "preselect": false,
+      "confidence": "high"
+    },
+    {
+      "type": "action",
+      "content": "견적 몇 개 받아보고 다시 얘기합시다",
+      "assigneeRaw": null,
+      "assigneeContextRaw": null,
+      "dueDateRaw": null,
+      "anchorDateRaw": null,
+      "blockedByRaw": null,
+      "reviewReasons": [
+        "no_assignee"
+      ],
+      "quote": "박팀장: \"견적 몇 개 받아보고 다시 얘기합시다\"",
+      "supersededQuote": null,
+      "id": "1ng9nqj",
+      "due": null,
+      "dueAnchor": null,
+      "dueMethod": "none",
+      "assignee": null,
+      "assigneeCandidates": [],
+      "preselect": false,
+      "confidence": "needs_review"
+    },
+    {
+      "type": "action",
+      "content": "민수씨가 말한 근태 시스템 오류 건, 담주 화요일까지 벤더에 문의 넣기로.",
+      "assigneeRaw": null,
+      "assigneeContextRaw": null,
+      "dueDateRaw": "담주 화요일까지",
+      "anchorDateRaw": null,
+      "blockedByRaw": null,
+      "reviewReasons": [
+        "no_assignee"
+      ],
+      "quote": "민수씨가 말한 근태 시스템 오류 건, 담주 화요일까지 벤더에 문의 넣기로.",
+      "supersededQuote": null,
+      "id": "1w1isj0",
+      "due": "2026-09-15",
+      "dueAnchor": null,
+      "dueMethod": "relative",
+      "assignee": null,
+      "assigneeCandidates": [],
+      "preselect": false,
+      "confidence": "needs_review"
+    }
+  ],
+  "rejected": []
+}
