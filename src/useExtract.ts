@@ -104,5 +104,15 @@ export function useExtract() {
     }
   }, [])
 
-  return { state, extract, reset }
+  /**
+   * 서버를 거치지 않고 결과를 그대로 앉힙니다. **개발 중 더미 데이터용입니다.**
+   * 진행 중인 요청이 있으면 버립니다 — 늦게 온 응답이 더미를 덮으면 안 됩니다.
+   */
+  const showResult = useCallback((meeting: ProcessedMeeting) => {
+    inFlight.current?.abort()
+    inFlight.current = null
+    setState({ status: 'done', meeting })
+  }, [])
+
+  return { state, extract, reset, showResult }
 }

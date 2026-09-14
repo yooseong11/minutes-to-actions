@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { countReasons } from '../lib/labels.js'
 import type { MeetingDateSource } from '../lib/postprocess.js'
+import { SAMPLE_01, SAMPLE_01_TEXT } from './fixtures/sample01.js'
 import ItemCard from './ItemCard.js'
 import { useExtract } from './useExtract.js'
 import './App.css'
@@ -41,7 +42,7 @@ export default function App() {
   const [text, setText] = useState('')
   // 사용자가 날짜칸을 직접 고쳤을 때만 값이 들어갑니다. 안 고쳤으면 null.
   const [pickedDate, setPickedDate] = useState<string | null>(null)
-  const { state, extract } = useExtract()
+  const { state, extract, showResult } = useExtract()
 
   const loading = state.status === 'loading'
 
@@ -52,6 +53,13 @@ export default function App() {
   const shownDate = pickedDate ?? resolvedDate ?? today()
 
   const submit = () => void extract(text, pickedDate, today())
+
+  /** 더미 데이터. 개발 중 화면만 볼 때 토큰을 쓰지 않기 위한 것입니다. */
+  const loadSample = () => {
+    setText(SAMPLE_01_TEXT)
+    setPickedDate(null)
+    showResult(SAMPLE_01)
+  }
 
   return (
     <div className="page">
@@ -76,6 +84,14 @@ export default function App() {
             {loading ? '추출하는 중…' : '추출하기'}
           </button>
           {loading && <span className="hint">최대 45초 걸릴 수 있어요.</span>}
+
+          {/* 개발 중에만 보입니다. 프로덕션 빌드에서는 통째로 사라집니다.
+              추출 버튼은 누를 때마다 OpenAI 토큰이 나갑니다. 화면만 고칠 때는 이쪽입니다. */}
+          {import.meta.env.DEV && (
+            <button className="button button--quiet" type="button" onClick={loadSample} disabled={loading}>
+              더미 데이터 (01번)
+            </button>
+          )}
         </div>
 
         {state.status === 'error' && (
