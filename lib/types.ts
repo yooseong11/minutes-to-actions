@@ -52,6 +52,14 @@ export interface RawExtraction {
   meetingPlaceRaw: string | null
   /** 회의 목적. 제목 줄이나 "안건:" 줄에서 발췌. 지어내지 않는다 */
   purposeRaw: string | null
+  /**
+   * 논의 내용 요약. **이 프로젝트에서 발췌가 아닌 유일한 칸이다.**
+   *
+   * 나머지 칸은 전부 원문 문자열을 그대로 옮긴 것이라 코드가 원문과 대조해
+   * 환각을 잡을 수 있다. 이 칸은 AI가 쓴 문장이라 대조할 원문이 없다.
+   * 그래서 화면이 이 칸에만 "확인이 필요합니다"를 항상 붙인다.
+   */
+  discussionSummary: string | null
   attendeesRaw: RawAttendee[]
   items: RawItem[]
 }

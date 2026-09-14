@@ -31,6 +31,7 @@ const fake = (items: RawItem[]): RawExtraction => ({
   meetingTimeRaw: '오전 10시',
   meetingPlaceRaw: '대회의실',
   purposeRaw: '주간 업무회의',
+  discussionSummary: '정수기 계약 만료를 앞두고 연장과 교체로 의견이 갈렸다.',
   attendeesRaw: [
     { nameRaw: '이수현', contextRaw: null },
     { nameRaw: '최영호', contextRaw: null },
@@ -280,4 +281,34 @@ test('TPO — 앞뒤 공백은 다듬는다', () => {
   const raw = { ...fake([]), meetingPlaceRaw: '  3층 소회의실  ' }
   const out = postprocess(raw, SOURCE, null, '2026-09-14')
   assert.equal(out.meetingPlaceRaw, '3층 소회의실')
+})
+
+// --- 논의 내용 (discussionSummary) -------------------------------------------
+// 검증할 원문이 없는 유일한 칸이다. 코드가 할 수 있는 일은 통과와 접기뿐이고,
+// 내용이 맞는지는 사람이 화면에서 본다. 그래서 테스트도 그 두 가지만 잰다.
+
+test('논의 내용은 요약 그대로 통과한다', () => {
+  const out = postprocess(fake([]), SOURCE, null, '2026-09-14')
+  assert.equal(out.discussionSummary, '정수기 계약 만료를 앞두고 연장과 교체로 의견이 갈렸다.')
+})
+
+test('논의 내용 — 빈 문자열은 null로 접힌다', () => {
+  const out = postprocess({ ...fake([]), discussionSummary: '  ' }, SOURCE, null, '2026-09-14')
+  // 빈 문자열이 통과하면 화면이 "요약할 논의가 없습니다" 대신
+  // 빈 경고 상자를 그린다. 경고만 있고 내용이 없는 화면이 된다.
+  assert.equal(out.discussionSummary, null)
+})
+
+test('논의 내용 — null이면 null로 남는다', () => {
+  const out = postprocess({ ...fake([]), discussionSummary: null }, SOURCE, null, '2026-09-14')
+  assert.equal(out.discussionSummary, null)
+})
+
+test('논의 내용은 환각 탐지를 타지 않는다 — 원문에 없어도 살아남는다', () => {
+  // 일부러 SOURCE에 없는 문장을 넣는다. 항목이었다면 verify가 떨어뜨렸을 것이다.
+  // 이 칸은 떨어지지 않는다는 것이 설계다 — 그래서 화면이 경고를 붙인다.
+  const raw = { ...fake([]), discussionSummary: '원문 어디에도 없는 문장이다.' }
+  const out = postprocess(raw, SOURCE, null, '2026-09-14')
+  assert.equal(out.discussionSummary, '원문 어디에도 없는 문장이다.')
+  assert.equal(out.rejected.length, 0)
 })

@@ -14,7 +14,10 @@ AI가 계산하면 틀리고, 틀려도 티가 안 납니다. AI가 문장을 �
 ## System prompt
 
 ```
-당신은 회의록에서 항목을 발췌하는 도구입니다. 요약하지 않습니다.
+당신은 회의록에서 항목을 발췌하는 도구입니다.
+
+**항목은 요약하지 않습니다.** 원문 문장을 그대로 옮깁니다.
+요약을 쓰는 칸은 discussionSummary 하나뿐이고, 5단계에서 따로 지시합니다.
 
 ## 0단계 — 회의 머리말 (날짜 · 시각 · 장소 · 목적)
 
@@ -101,6 +104,18 @@ purposeRaw      제목 줄 → "안건:"·"목적:" 줄 순서로 찾습니다.
 - ambiguous_intent : 결정인지 잡담인지 판단이 갈림
 
 ※ assignee_unmatched는 AI가 넣지 않습니다. 시스템이 참석자 대조 후 붙입니다.
+
+## 5단계 — 논의 내용 (discussionSummary)
+
+**여기만 문장을 씁니다.** 이 회의에 없던 사람이 읽고 무슨 얘기가 오갔는지
+알 수 있게 3~6문장.
+
+써야 할 것   안건이 올라온 이유 / 의견이 갈린 지점 / 결론이 안 난 이유
+쓰지 말 것   결정·할 일·미결 재나열(3단계가 이미 함)
+             원문에 없는 사실·숫자·이름·날짜 — 이 칸은 대조 검증을 받지 않습니다
+             평가·제언·다음 할 일 추천 / 참석자의 속마음 추측
+             2단계에서 버린 것
+형식         평서체. 개조식 금지. 논의랄 것이 없으면 null
 ```
 
 ## User message
@@ -121,12 +136,13 @@ purposeRaw      제목 줄 → "안건:"·"목적:" 줄 순서로 찾습니다.
   type: "object",
   additionalProperties: false,
   required: ["meetingDateRaw", "meetingTimeRaw", "meetingPlaceRaw",
-             "purposeRaw", "attendeesRaw", "items"],
+             "purposeRaw", "discussionSummary", "attendeesRaw", "items"],
   properties: {
     meetingDateRaw:  { type: ["string", "null"] },  // 본문에 적힌 그대로
     meetingTimeRaw:  { type: ["string", "null"] },  // "10:00" / "오전"
     meetingPlaceRaw: { type: ["string", "null"] },  // "대회의실"
     purposeRaw:      { type: ["string", "null"] },  // "주간 업무회의"
+    discussionSummary: { type: ["string", "null"] }, // ★ 유일한 생성 칸
     attendeesRaw: {
       type: "array",
       items: {
@@ -175,6 +191,19 @@ purposeRaw      제목 줄 → "안건:"·"목적:" 줄 순서로 찾습니다.
 ```
 
 ### 변경 이력
+
+**6차 — 논의 내용 추가 (2026-09-14)**
+
+- `discussionSummary` 추가. **이 프로젝트에서 발췌가 아닌 유일한 칸입니다.**
+- 첫 줄 "요약하지 않습니다"를 지우지 않고 **범위를 좁혔습니다** —
+  "항목은 요약하지 않습니다 / 요약을 쓰는 칸은 discussionSummary 하나뿐"
+  원칙을 통째로 없애면 AI가 다른 칸에서도 문장을 쓰기 시작합니다
+- 5단계 신설. 금지 목록을 길게 쓴 이유: 이 칸은 `verify.ts`의 원문 대조를
+  받지 않습니다. 지어내도 코드가 못 잡으므로, 프롬프트가 유일한 방어선입니다
+- **"결정·할 일·미결을 다시 나열하지 마십시오"** — 요약을 허용하면 AI가
+  가장 먼저 하는 일이 항목 재나열입니다. 같은 내용이 화면에 두 번 나옵니다
+- 화면은 이 칸에만 `.doc-unverified` 경고를 항상 띄웁니다.
+  검증 여부가 다른데 생김새가 같으면 읽는 사람이 같은 신뢰도로 읽습니다
 
 **5차 — TPO 필드 추가 (2026-09-14)**
 

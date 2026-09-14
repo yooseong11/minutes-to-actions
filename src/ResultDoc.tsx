@@ -15,8 +15,9 @@ import ItemCard from './ItemCard.js'
  * **빈 칸도 제목을 남깁니다.** 없는 칸을 지우면 회의록에 뭐가 빠졌는지 안 보입니다.
  * 이 순서와 제목이 그대로 섹션 5의 마크다운 내보내기가 됩니다.
  *
- * 아직 못 채우는 칸이 하나 남았습니다 (논의 내용).
- * 비어 있다고 숨기지 않고 왜 비었는지 적습니다 — 이 프로젝트의 입장입니다.
+ * 다섯 칸 중 넷은 원문 발췌입니다. **논의 내용 한 칸만 AI가 쓴 요약이고,
+ * 그 칸에만 "확인이 필요합니다"를 항상 붙입니다.** 검증 여부가 다른데 생김새가
+ * 같으면, 읽는 사람이 둘을 같은 신뢰도로 읽습니다.
  *
  * TPO의 시각·장소·목적은 **원문에 있는 값을 그대로 옮긴 것**입니다.
  * 원문에 없으면 "원문에 없음"이라고 적습니다 — 비었다는 사실 자체가 정보입니다.
@@ -57,12 +58,20 @@ export default function ResultDoc({
         </dl>
       </Section>
 
-      <Section title="논의 내용" note="아직 만들지 않음">
-        <p className="doc-todo">
-          이 칸은 <strong>요약</strong>입니다. 지금 프롬프트의 첫 줄이
-          “요약하지 않습니다”이고, AI는 발췌만 하도록 묶여 있습니다.
-          채우려면 그 원칙을 어디까지 열지부터 정해야 합니다.
-        </p>
+      <Section title="논의 내용" note="AI 요약 · 검증 안 됨">
+        {meeting.discussionSummary === null ? (
+          <p className="doc-empty">요약할 논의가 없습니다.</p>
+        ) : (
+          <>
+            {/* 경고가 요약보다 위에 옵니다. 읽고 난 뒤에 알려주면 늦습니다 */}
+            <p className="doc-unverified">
+              <strong>확인이 필요합니다.</strong> 이 칸만 원문 발췌가 아니라 AI가 쓴
+              문장입니다. 다른 칸은 원문과 대조해 지어낸 것을 걸러내지만,
+              이 칸은 대조할 원문이 없습니다.
+            </p>
+            <p className="doc-line">{meeting.discussionSummary}</p>
+          </>
+        )}
       </Section>
 
       {SECTIONS.map((s) => {

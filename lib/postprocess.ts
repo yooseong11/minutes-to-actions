@@ -56,6 +56,15 @@ export interface ProcessedMeeting {
   meetingTimeRaw: string | null
   meetingPlaceRaw: string | null
   purposeRaw: string | null
+  /**
+   * 논의 내용 요약. **검증되지 않은 유일한 칸.**
+   *
+   * 다른 칸은 전부 원문 발췌라 verify.ts가 원문과 대조한다.
+   * 이 칸은 AI가 쓴 문장이라 대조할 원문이 없다 — 틀려도 코드가 못 잡는다.
+   * 그래서 값을 내보내되, 화면이 "확인이 필요합니다"를 항상 같이 그린다.
+   * 감추지 않고 드러내는 쪽을 택했다.
+   */
+  discussionSummary: string | null
   attendees: RawAttendee[]
   items: ProcessedItem[]
   /** 인용문이 원문에 없어 탈락한 항목. 감추지 않고 내보낸다 */
@@ -214,6 +223,8 @@ export function postprocess(
     meetingTimeRaw: blankToNull(raw.meetingTimeRaw),
     meetingPlaceRaw: blankToNull(raw.meetingPlaceRaw),
     purposeRaw: blankToNull(raw.purposeRaw),
+    // 검증 없이 그대로 내보낸다. 코드가 판정할 수 있는 것이 없다
+    discussionSummary: blankToNull(raw.discussionSummary),
     attendees,
     items,
     rejected,
