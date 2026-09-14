@@ -62,7 +62,10 @@ function parseBody(raw: unknown): ExtractBody | null {
 function isRawExtraction(value: unknown): value is RawExtraction {
   if (typeof value !== 'object' || value === null) return false
   const v = value as Record<string, unknown>
-  return Array.isArray(v.attendeesRaw) && Array.isArray(v.items)
+  // items는 최상위에 없다. 4.5부터 항목은 agendas 안에만 있다 —
+  // 옛 응답(최상위 items)이 오면 여기서 걸려야 한다. 통과시키면 항목 0개짜리
+  // 회의록이 조용히 나온다.
+  return Array.isArray(v.attendeesRaw) && Array.isArray(v.agendas)
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {

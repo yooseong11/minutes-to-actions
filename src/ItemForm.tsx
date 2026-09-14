@@ -17,11 +17,11 @@ export default function ItemForm({ initial, attendees, onSave, onCancel, adding 
   return (
     <form className="item-form" onSubmit={event => {
       event.preventDefault()
-      if (!content.trim()) { setError('안건 내용을 입력해 주세요.'); return }
+      if (!content.trim()) { setError('항목 내용을 입력해 주세요.'); return }
       onSave({ content: content.trim(), type, due: due || null, clearedFields,
         assignee: name.trim() ? { nameRaw: name.trim(), contextRaw: context.trim() || null } : null })
     }}>
-      <label htmlFor={`${id}-content`}>안건 내용</label>
+      <label htmlFor={`${id}-content`}>항목 내용</label>
       <textarea id={`${id}-content`} className="edit-input edit-content" value={content} required autoFocus
         onChange={event => { setContent(event.target.value); setError('') }} />
       <label htmlFor={`${id}-type`}>분류</label>
@@ -54,7 +54,7 @@ export default function ItemForm({ initial, attendees, onSave, onCancel, adding 
       </div>
       {error && <p className="error" role="alert">{error}</p>}
       <div className="actions">
-        <button type="submit" className="button">{adding ? '안건 추가' : '수정 적용'}</button>
+        <button type="submit" className="button">{adding ? '항목 추가' : '수정 적용'}</button>
         <button type="button" className="button button--quiet button--edit" onClick={onCancel}>취소</button>
       </div>
     </form>

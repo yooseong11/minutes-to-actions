@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { postprocess, resolveMeetingDate } from '../lib/postprocess.js'
-import type { RawExtraction, RawItem } from '../lib/types.js'
+import type { RawAgenda, RawExtraction, RawItem } from '../lib/types.js'
 
 // 실제 샘플 05 원문 일부
 const SOURCE = `비품/총무 건 (9/13 금 오전 짧게)
@@ -25,20 +25,29 @@ const item = (over: Partial<RawItem>): RawItem => ({
   ...over,
 })
 
+const agenda = (items: RawItem[], over: Partial<RawAgenda> = {}): RawAgenda => ({
+  title: '정수기 계약',
+  summary: '정수기 계약 만료를 앞두고 연장과 교체로 의견이 갈렸다.',
+  items,
+  ...over,
+})
+
 // LLM 호출 없이, 가짜 AI 응답으로 후처리만 검증한다
-const fake = (items: RawItem[]): RawExtraction => ({
+const fakeAgendas = (agendas: RawAgenda[]): RawExtraction => ({
   meetingDateRaw: '9/13 금',
   meetingTimeRaw: '오전 10시',
   meetingPlaceRaw: '대회의실',
   purposeRaw: '주간 업무회의',
-  discussionSummary: '정수기 계약 만료를 앞두고 연장과 교체로 의견이 갈렸다.',
   attendeesRaw: [
     { nameRaw: '이수현', contextRaw: null },
     { nameRaw: '최영호', contextRaw: null },
     { nameRaw: '정다은', contextRaw: null },
   ],
-  items,
+  agendas,
 })
+
+/** 안건이 하나뿐인 회의. 항목 쪽만 보는 테스트는 이걸 쓴다 */
+const fake = (items: RawItem[]): RawExtraction => fakeAgendas([agenda(items)])
 
 test('커피머신 — 역산 결과와 no_assignee가 같이 나온다', () => {
   const out = postprocess(
@@ -283,32 +292,104 @@ test('TPO — 앞뒤 공백은 다듬는다', () => {
   assert.equal(out.meetingPlaceRaw, '3층 소회의실')
 })
 
-// --- 논의 내용 (discussionSummary) -------------------------------------------
-// 검증할 원문이 없는 유일한 칸이다. 코드가 할 수 있는 일은 통과와 접기뿐이고,
-// 내용이 맞는지는 사람이 화면에서 본다. 그래서 테스트도 그 두 가지만 잰다.
+// --- 안건 (agendas) ---------------------------------------------------------
+// 4.5에서 생긴 계층이다. 코드는 묶음을 판정하지 않는다 — AI가 묶은 대로 받아
+// 항목에 소속(agendaId)을 붙이는 일만 한다. 그래서 여기서 잴 것은 두 가지다.
+//   1) 소속이 항목까지 정확히 따라가는가
+//   2) 검증 없는 두 칸(제목·요약)이 손상 없이, 빈 값은 접혀서 나오는가
 
-test('논의 내용은 요약 그대로 통과한다', () => {
+test('안건 제목과 요약은 그대로 통과한다', () => {
   const out = postprocess(fake([]), SOURCE, null, '2026-09-14')
-  assert.equal(out.discussionSummary, '정수기 계약 만료를 앞두고 연장과 교체로 의견이 갈렸다.')
+  assert.equal(out.agendas.length, 1)
+  assert.equal(out.agendas[0]?.title, '정수기 계약')
+  assert.equal(out.agendas[0]?.summary, '정수기 계약 만료를 앞두고 연장과 교체로 의견이 갈렸다.')
 })
 
-test('논의 내용 — 빈 문자열은 null로 접힌다', () => {
-  const out = postprocess({ ...fake([]), discussionSummary: '  ' }, SOURCE, null, '2026-09-14')
-  // 빈 문자열이 통과하면 화면이 "요약할 논의가 없습니다" 대신
-  // 빈 경고 상자를 그린다. 경고만 있고 내용이 없는 화면이 된다.
-  assert.equal(out.discussionSummary, null)
+test('안건 요약 — 빈 문자열은 null로 접힌다', () => {
+  // 빈 문자열이 통과하면 화면이 "요약할 논의가 없습니다" 대신 빈 줄을 그린다
+  const out = postprocess(fakeAgendas([agenda([], { summary: '  ' })]), SOURCE, null, '2026-09-14')
+  assert.equal(out.agendas[0]?.summary, null)
 })
 
-test('논의 내용 — null이면 null로 남는다', () => {
-  const out = postprocess({ ...fake([]), discussionSummary: null }, SOURCE, null, '2026-09-14')
-  assert.equal(out.discussionSummary, null)
+test('안건 제목이 비어서 오면 칸을 지우지 않고 비었다고 적는다', () => {
+  const out = postprocess(fakeAgendas([agenda([], { title: '   ' })]), SOURCE, null, '2026-09-14')
+  assert.equal(out.agendas[0]?.title, '(제목 없음)')
 })
 
-test('논의 내용은 환각 탐지를 타지 않는다 — 원문에 없어도 살아남는다', () => {
+test('안건 제목·요약은 환각 탐지를 타지 않는다 — 원문에 없어도 살아남는다', () => {
   // 일부러 SOURCE에 없는 문장을 넣는다. 항목이었다면 verify가 떨어뜨렸을 것이다.
-  // 이 칸은 떨어지지 않는다는 것이 설계다 — 그래서 화면이 경고를 붙인다.
-  const raw = { ...fake([]), discussionSummary: '원문 어디에도 없는 문장이다.' }
-  const out = postprocess(raw, SOURCE, null, '2026-09-14')
-  assert.equal(out.discussionSummary, '원문 어디에도 없는 문장이다.')
+  // 이 두 칸은 떨어지지 않는다는 것이 설계다 — 그래서 화면이 경고를 붙인다.
+  const out = postprocess(
+    fakeAgendas([agenda([], { title: '원문에 없는 제목', summary: '원문 어디에도 없는 문장이다.' })]),
+    SOURCE,
+    null,
+    '2026-09-14',
+  )
+  assert.equal(out.agendas[0]?.title, '원문에 없는 제목')
+  assert.equal(out.agendas[0]?.summary, '원문 어디에도 없는 문장이다.')
   assert.equal(out.rejected.length, 0)
+})
+
+test('항목은 평면으로 나오고 각자 자기 안건의 id를 들고 있다', () => {
+  const out = postprocess(
+    fakeAgendas([
+      agenda([item({ content: '토너 발주', assigneeRaw: '최영호', quote: '프린터 토너 재고 소진 임박 → 발주. 최영호.' })], { title: '토너 재고' }),
+      agenda([item({ content: '커피머신 해지 통보', quote: '만료가 11월 2일.' })], { title: '커피머신 계약' }),
+    ]),
+    SOURCE,
+    '2026-09-13',
+  )
+
+  assert.equal(out.items.length, 2)
+  assert.equal(out.agendas.length, 2)
+  // 안건 순서는 회의에서 나온 순서 그대로다
+  assert.deepEqual(out.agendas.map((a) => a.title), ['토너 재고', '커피머신 계약'])
+  assert.equal(out.items[0]?.agendaId, out.agendas[0]?.id)
+  assert.equal(out.items[1]?.agendaId, out.agendas[1]?.id)
+  assert.notEqual(out.agendas[0]?.id, out.agendas[1]?.id)
+})
+
+test('제목이 같은 안건이 둘이어도 id는 갈린다', () => {
+  const out = postprocess(
+    fakeAgendas([agenda([], { title: '기타' }), agenda([], { title: '기타' })]),
+    SOURCE,
+    '2026-09-13',
+  )
+  assert.notEqual(out.agendas[0]?.id, out.agendas[1]?.id)
+})
+
+test('항목이 전부 환각으로 걸러져도 안건은 남는다', () => {
+  // 조용히 지우면 "AI가 안건이라고 본 화제가 통째로 사라진 것"을 아무도 모른다
+  const out = postprocess(
+    fakeAgendas([agenda([item({ content: '지어낸 항목', quote: '원문에 없는 문장입니다' })], { title: '유령 안건' })]),
+    SOURCE,
+    '2026-09-13',
+  )
+  assert.equal(out.items.length, 0)
+  assert.equal(out.rejected.length, 1)
+  assert.deepEqual(out.agendas.map((a) => a.title), ['유령 안건'])
+})
+
+test('번복 접기는 안건을 넘어서도 동작한다', () => {
+  // 뒤집힌 결정과 그 번복이 다른 안건으로 갈려 나오면, 취소선 대신 항목 두 개가 남는다
+  const out = postprocess(
+    fakeAgendas([
+      agenda([item({ type: 'decision', content: 'A사로 결정', quote: '만료가 11월 2일.' })], { title: '업체 선정' }),
+      agenda(
+        [item({ type: 'open', content: '다시 원점', quote: '프린터 토너 재고 소진 임박 → 발주. 최영호.', supersededQuote: '만료가 11월 2일.' })],
+        { title: '업체 선정 재논의' },
+      ),
+    ]),
+    SOURCE,
+    '2026-09-13',
+  )
+  assert.equal(out.items.length, 1)
+  assert.equal(out.items[0]?.type, 'open')
+  assert.equal(out.items[0]?.agendaId, out.agendas[1]?.id)
+})
+
+test('안건이 하나도 없으면 항목도 없다 (빈 배열로 내려간다)', () => {
+  const out = postprocess(fakeAgendas([]), SOURCE, '2026-09-13')
+  assert.deepEqual(out.agendas, [])
+  assert.deepEqual(out.items, [])
 })

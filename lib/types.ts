@@ -44,6 +44,26 @@ export interface RawItem {
   supersededQuote: string | null
 }
 
+/**
+ * 안건 하나. **항목을 담는 그릇이다.**
+ *
+ * 항목의 단위는 발화지만, 사람이 회의를 기억하는 단위는 안건이다.
+ * 발화 단위는 환각 탐지(quote 대조)를 쉽게 하려고 고른 것이지 읽으라고 고른 게 아니다.
+ * 그래서 항목은 그대로 두고 **그 위에 한 겹**을 올린다.
+ *
+ * `title`과 `summary`는 **원문 발췌가 아니다.** AI가 쓴 문장이라 대조할 원문이 없다.
+ * 이 프로젝트에서 검증을 못 받는 칸은 이 둘뿐이고, 화면이 둘에만 경고를 붙인다.
+ * 대신 묶음이 틀리면 상관없는 항목이 한 칸에 들어가 **읽는 순간 보인다** —
+ * 이전의 discussionSummary처럼 조용히 틀리는 종류가 아니라서 허용했다.
+ */
+export interface RawAgenda {
+  /** "사내 문의 대응" — AI가 쓴 제목. 발췌 아님 */
+  title: string
+  /** 이 안건에서 무슨 얘기가 오갔는지 1~3문장. 논의랄 게 없으면 null */
+  summary: string | null
+  items: RawItem[]
+}
+
 export interface RawExtraction {
   meetingDateRaw: string | null
   /** "10:00" / "오전 10시" — 원문 그대로. 환산하지 않는다 */
@@ -52,16 +72,12 @@ export interface RawExtraction {
   meetingPlaceRaw: string | null
   /** 회의 목적. 제목 줄이나 "안건:" 줄에서 발췌. 지어내지 않는다 */
   purposeRaw: string | null
-  /**
-   * 논의 내용 요약. **이 프로젝트에서 발췌가 아닌 유일한 칸이다.**
-   *
-   * 나머지 칸은 전부 원문 문자열을 그대로 옮긴 것이라 코드가 원문과 대조해
-   * 환각을 잡을 수 있다. 이 칸은 AI가 쓴 문장이라 대조할 원문이 없다.
-   * 그래서 화면이 이 칸에만 "확인이 필요합니다"를 항상 붙인다.
-   */
-  discussionSummary: string | null
   attendeesRaw: RawAttendee[]
-  items: RawItem[]
+  /**
+   * 항목은 여기 안에만 있다. 최상위 items는 없앴다 —
+   * 두 군데에 담으면 어느 쪽이 진짜인지 코드가 계속 골라야 한다.
+   */
+  agendas: RawAgenda[]
 }
 
 /** 'YYYY-MM-DD' */

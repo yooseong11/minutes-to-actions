@@ -2,6 +2,7 @@
  * 후처리 조립. AI 응답을 받아 코드가 검사·계산·대조한 결과로 바꾼다.
  *
  * 순서 (00_인수인계.md 기준)
+ *   0) 안건 안의 항목을 평면으로 펼치고 소속(agendaId)을 기억
  *   1) quote / supersededQuote 환각 탐지
  *   2) parseDue — 상대날짜·역산.  실패하면 due_unparseable 승격
  *   3) assigneeRaw를 attendeesRaw와 대조. 실패하면 assignee_unmatched 승격
@@ -22,11 +23,13 @@ import {
   shouldPreselect,
 } from './people.js'
 import { verifyItems, type RejectedItem } from './verify.js'
-import type { Confidence, DateKey, RawAttendee, RawExtraction, RawItem, ReviewReason } from './types.js'
+import type { Confidence, DateKey, RawAgenda, RawAttendee, RawExtraction, RawItem, ReviewReason } from './types.js'
 
 export interface ProcessedItem extends RawItem {
   /** 회의 안에서 안정적인 id. 나중에 DB를 붙일 때 그대로 쓴다 */
   id: string
+  /** 이 항목이 속한 안건. 항목 배열은 평면으로 두고 소속만 들고 다닌다 */
+  agendaId: string
   /** 코드가 계산한 실제 기한 */
   due: DateKey | null
   dueAnchor: DateKey | null
@@ -42,6 +45,24 @@ export interface ProcessedItem extends RawItem {
 /** 기준일을 어디서 가져왔는가. 화면이 문구를 갈라 쓴다 */
 export type MeetingDateSource = 'user' | 'document' | 'fallback' | 'none'
 
+/**
+ * 안건 하나. **항목을 품지 않는다. 제목과 요약뿐이다.**
+ *
+ * 항목을 안건 안에 중첩하지 않은 이유: 편집·CSV 내보내기·환각 탐지가 전부
+ * 항목 단위로 돈다. 중첩하면 그 셋이 전부 2중 순회로 바뀐다.
+ *
+ * 소속은 **항목 쪽 agendaId 한 군데에만** 적는다. 안건이 항목 id 목록을 따로
+ * 들고 있으면, 사용자가 항목을 지웠을 때 두 곳을 같이 고쳐야 하고
+ * 한쪽만 고치면 화면이 없는 항목을 그린다. 사실을 두 번 적지 않는다.
+ */
+export interface ProcessedAgenda {
+  id: string
+  /** AI가 쓴 제목. **원문 대조를 받지 않는다** */
+  title: string
+  /** AI가 쓴 요약. **원문 대조를 받지 않는다.** 논의랄 게 없으면 null */
+  summary: string | null
+}
+
 export interface ProcessedMeeting {
   /** 기한 환산에 실제로 쓴 날짜 */
   meetingDate: DateKey | null
@@ -56,16 +77,19 @@ export interface ProcessedMeeting {
   meetingTimeRaw: string | null
   meetingPlaceRaw: string | null
   purposeRaw: string | null
-  /**
-   * 논의 내용 요약. **검증되지 않은 유일한 칸.**
-   *
-   * 다른 칸은 전부 원문 발췌라 verify.ts가 원문과 대조한다.
-   * 이 칸은 AI가 쓴 문장이라 대조할 원문이 없다 — 틀려도 코드가 못 잡는다.
-   * 그래서 값을 내보내되, 화면이 "확인이 필요합니다"를 항상 같이 그린다.
-   * 감추지 않고 드러내는 쪽을 택했다.
-   */
-  discussionSummary: string | null
   attendees: RawAttendee[]
+  /**
+   * 안건 목록. **제목·요약 두 칸만 검증을 못 받는다.**
+   *
+   * 나머지 칸은 전부 원문 발췌라 verify.ts가 원문과 대조한다.
+   * 이 둘은 AI가 쓴 문장이라 대조할 원문이 없다 — 틀려도 코드가 못 잡는다.
+   * 그래서 값을 내보내되, 화면이 "확인이 필요합니다"를 항상 같이 그린다.
+   *
+   * 다만 **묶음이 틀리면 화면에서 바로 보인다.** 상관없는 항목이 한 칸에 들어가
+   * 있으면 읽는 순간 안다. 검증 면적을 넓히면서도 허용한 근거가 이것이다.
+   */
+  agendas: ProcessedAgenda[]
+  /** 안건에 상관없이 평면. 소속은 각 항목의 agendaId가 들고 있다 */
   items: ProcessedItem[]
   /** 인용문이 원문에 없어 탈락한 항목. 감추지 않고 내보낸다 */
   rejected: RejectedItem[]
@@ -150,8 +174,23 @@ export function postprocess(
     fallbackDate,
   )
 
+  // 0) 안건 안에 든 항목을 평면으로 펼친다.
+  //    소속(agendaId)은 Map에 기억해 둔다 — verifyItems도 중복 접기도 항목 객체를
+  //    그대로 통과시키므로, 참조를 열쇠로 쓰면 인덱스를 따라다닐 필요가 없다.
+  const rawAgendas: RawAgenda[] = Array.isArray(raw.agendas) ? raw.agendas : []
+  const agendaIdOf = new Map<RawItem, string>()
+  const agendaMeta = rawAgendas.map((agenda, index) => {
+    // 제목은 비울 수 없는 칸이지만, 비어서 오면 칸을 지우지 않고 비었다고 적는다
+    const title = blankToNull(agenda?.title) ?? '(제목 없음)'
+    // 인덱스를 섞는 이유: 같은 제목의 안건이 둘이면 id가 겹친다
+    const id = stableId(`agenda|${index}|${title}`)
+    for (const item of Array.isArray(agenda?.items) ? agenda.items : []) agendaIdOf.set(item, id)
+    return { id, title, summary: blankToNull(agenda?.summary) }
+  })
+  const flatItems = rawAgendas.flatMap((agenda) => (Array.isArray(agenda?.items) ? agenda.items : []))
+
   // 1) 환각 탐지 — 여기서 떨어진 항목은 아래 단계를 타지 않는다
-  const { verified, rejected } = verifyItems(raw.items, sourceText)
+  const { verified, rejected } = verifyItems(flatItems, sourceText)
 
   // 5) 동명이인 — 항목별이 아니라 참석자 목록 전체를 보고 한 번에 판정한다
   const duplicates = findDuplicateNames(attendees)
@@ -203,6 +242,8 @@ export function postprocess(
       ...item,
       assigneeRaw,
       id: stableId(`${item.type}|${item.quote}`),
+      // 안건이 사라진 항목은 없다. 없으면 위 Map 조립이 틀린 것이므로 빈 문자열로 드러낸다
+      agendaId: agendaIdOf.get(item) ?? '',
       due: due.due,
       dueAnchor: due.anchor,
       dueMethod: due.method,
@@ -223,9 +264,10 @@ export function postprocess(
     meetingTimeRaw: blankToNull(raw.meetingTimeRaw),
     meetingPlaceRaw: blankToNull(raw.meetingPlaceRaw),
     purposeRaw: blankToNull(raw.purposeRaw),
-    // 검증 없이 그대로 내보낸다. 코드가 판정할 수 있는 것이 없다
-    discussionSummary: blankToNull(raw.discussionSummary),
     attendees,
+    // 제목·요약은 검증 없이 그대로 내보낸다. 코드가 판정할 수 있는 것이 없다.
+    // 항목이 하나도 안 남은 안건도 지우지 않는다 — 비었다는 사실 자체가 정보다.
+    agendas: agendaMeta,
     items,
     rejected,
   }

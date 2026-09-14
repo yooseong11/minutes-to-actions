@@ -15,8 +15,12 @@
  * TPO 세 칸(`meetingTimeRaw`·`meetingPlaceRaw`·`purposeRaw`)은 실제 추출이 아니라
  * **원문에서 손으로 옮긴 값**입니다. 코드가 계산하지 않고 그대로 통과시키는 칸이라
  * 화면 확인에는 같은 값이지만, 프롬프트가 저 셋을 잘 뽑는지는 이 파일로 알 수 없습니다.
- * 그건 회귀 5차 측정에서 실제 추출로 확인할 일입니다.
- * `discussionSummary`도 마찬가지로 손으로 쓴 것입니다.
+ * 그건 회귀 측정에서 실제 추출로 확인할 일입니다.
+ *
+ * **안건(`agendas`)도 손으로 묶은 것입니다.** 4.5에서 스키마가 바뀌면서 기존 항목
+ * 6개를 화제별로 4개 안건에 나눠 넣고, 제목과 요약을 사람이 썼습니다.
+ * 프롬프트가 안건을 잘 가르는지는 이 파일로 알 수 없습니다 — 회귀 6차가 잴 일입니다.
+ * `id`는 실제 코드와 같은 방식(`agenda|순번|제목`의 해시)으로 만들었습니다.
  */
 import type { ProcessedMeeting } from '../../lib/postprocess.js'
 
@@ -26,15 +30,9 @@ export const SAMPLE_01: ProcessedMeeting = {
   "meetingDate": "2026-09-08",
   "meetingDateRaw": "2026-09-08",
   "meetingDateSource": "document",
-  // TPO 세 칸은 발췌를 그대로 흘려보내는 값이라 손으로 채웠습니다 (재추출 안 함).
-  // 원문 둘째 줄 "2026-09-08 (월) 10:00 / 대회의실"과 첫 줄 제목에서 그대로 옮긴 것입니다.
   "meetingTimeRaw": "10:00",
   "meetingPlaceRaw": "대회의실",
   "purposeRaw": "주간 업무회의",
-  // 논의 내용도 손으로 쓴 것입니다. 실제 AI 요약이 아닙니다 — 화면 확인용.
-  // 프롬프트가 이 칸을 어떻게 채우는지는 회귀 5차 측정에서만 알 수 있습니다.
-  "discussionSummary":
-    "지난주 게시한 채용공고로 지원자가 41명 모였고, 서류 검토 분량이 한 사람이 보기에 많다는 말이 나왔다. 1차는 혼자 보고 넘기기 애매한 건만 함께 보는 쪽으로 조율했다. 8월분 법인카드 정산이 영수증 누락 때문에 아직 끝나지 않은 상태가 보고되었다. 정수기는 계약 만료를 앞두고 연장과 교체로 의견이 갈렸는데, 지금 것이 자주 고장난다는 의견과 견적을 더 받아보자는 의견이 맞서 결론이 나지 않았다.",
   "attendees": [
     {
       "nameRaw": "박팀장",
@@ -57,6 +55,28 @@ export const SAMPLE_01: ProcessedMeeting = {
       "contextRaw": "중간 합류"
     }
   ],
+  "agendas": [
+    {
+      "id": "0a5f4tq",
+      "title": "채용 서류 검토",
+      "summary": "지난주 게시한 채용공고로 지원자가 41명 모였고, 서류 검토 분량이 한 사람이 보기에 많다는 말이 나왔다. 1차는 혼자 보고 넘기기 애매한 건만 함께 보는 쪽으로 조율했다."
+    },
+    {
+      "id": "1fu5228",
+      "title": "법인카드 정산",
+      "summary": "8월분 법인카드 정산이 영수증 누락 4건 때문에 아직 끝나지 않은 상태가 보고되었다."
+    },
+    {
+      "id": "1wmlks1",
+      "title": "사무실 정수기 계약",
+      "summary": "계약 만료를 앞두고 연장과 교체로 의견이 갈렸다. 지금 것이 자주 고장난다는 의견과 견적을 더 받아보자는 의견이 맞서 결론이 나지 않았다."
+    },
+    {
+      "id": "1h6d79c",
+      "title": "근태 시스템 오류",
+      "summary": null
+    }
+  ],
   "items": [
     {
       "type": "action",
@@ -72,6 +92,7 @@ export const SAMPLE_01: ProcessedMeeting = {
       "quote": "서류 검토는 김 대리가 이번 주 안에 마무리하기로.",
       "supersededQuote": null,
       "id": "0paj5p9",
+      "agendaId": "0a5f4tq",
       "due": "2026-09-13",
       "dueAnchor": null,
       "dueMethod": "relative",
@@ -97,6 +118,7 @@ export const SAMPLE_01: ProcessedMeeting = {
       "quote": "해당 사용자들한테 개별로 연락 돌리기로. 이건 정다은 님이.",
       "supersededQuote": null,
       "id": "1d9zyib",
+      "agendaId": "1fu5228",
       "due": null,
       "dueAnchor": null,
       "dueMethod": "none",
@@ -120,6 +142,7 @@ export const SAMPLE_01: ProcessedMeeting = {
       "quote": "사무실 정수기 계약 만료 다음 달인데 연장할지 교체할지.",
       "supersededQuote": null,
       "id": "0zfkl6g",
+      "agendaId": "1wmlks1",
       "due": null,
       "dueAnchor": null,
       "dueMethod": "none",
@@ -142,6 +165,7 @@ export const SAMPLE_01: ProcessedMeeting = {
       "quote": "민수씨가 말한 근태 시스템 오류 건, 담주 화요일까지 벤더에 문의 넣기로.",
       "supersededQuote": null,
       "id": "1w1isj0",
+      "agendaId": "1h6d79c",
       "due": "2026-09-15",
       "dueAnchor": null,
       "dueMethod": "relative",
@@ -166,6 +190,7 @@ export const SAMPLE_01: ProcessedMeeting = {
       "quote": "최영호: \"지금 거 자주 고장나요\"",
       "supersededQuote": null,
       "id": "1rw8tbv",
+      "agendaId": "1wmlks1",
       "due": null,
       "dueAnchor": null,
       "dueMethod": "none",
@@ -188,6 +213,7 @@ export const SAMPLE_01: ProcessedMeeting = {
       "quote": "(결론 안 남)",
       "supersededQuote": "신규 입사자 노트북 2대 발주 건은 지난주에 이미 완료됨. 확인만.",
       "id": "10b752c",
+      "agendaId": "1wmlks1",
       "due": null,
       "dueAnchor": null,
       "dueMethod": "none",

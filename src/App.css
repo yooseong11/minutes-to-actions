@@ -528,65 +528,125 @@ button.chip[aria-pressed="true"] { border-color: var(--color-accent-border); bac
   line-height: var(--leading-xs);
 }
 
-/* 태블릿·모바일은 문서 순서대로, 넓은 화면은 세 열의 안건 보드로 표시합니다. */
-.kanban-board { display: flex; flex-direction: column; gap: var(--space-8); }
+/* ---- 안건 (4.5) ------------------------------------------------------------
+ *
+ * 칸반 3열을 걷어낸 자리입니다. 결정·할 일·미결로 가르면 한 안건이 세 칸으로
+ * 흩어져서, "한 달치 질문 분류"가 무슨 질문인지 화면에서 알 수 없게 됩니다.
+ * 분류는 없어지지 않고 항목 왼쪽의 .type-tag로 남습니다.
+ *
+ * 넓은 화면에서도 한 열로 둡니다. 안건은 위에서 아래로 읽는 순서가 있습니다 —
+ * 두 열로 쪼개면 어느 쪽을 먼저 읽어야 하는지가 사라집니다.
+ */
+.agendas { display: flex; flex-direction: column; gap: var(--space-6); }
 
-/* 한 열로 쌓이는 폭에서는 스크롤이 깁니다. 결정·할 일·미결 중 어느 칸을 읽고
-   있는지 잃지 않도록 섹션 제목을 화면 위에 붙입니다.
+.agenda {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-4);
+  background: var(--color-surface-muted);
+  border: var(--border-thin) solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.agenda-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding-bottom: var(--space-2);
+  border-bottom: var(--border-thin) solid var(--color-divider);
+  font-size: var(--text-base);
+  line-height: var(--leading-base);
+  font-weight: var(--weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.agenda-count {
+  margin-left: auto;
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  font-weight: var(--weight-regular);
+  color: var(--color-text-subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+/* AI가 쓴 문장입니다. 안건 블록 위의 경고가 이 칸과 제목을 함께 가리킵니다 */
+.agenda-summary {
+  font-size: var(--text-sm);
+  line-height: var(--leading-base);
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.agenda-summary--empty { color: var(--color-text-subtle); }
+
+.agenda-item { display: flex; align-items: flex-start; gap: var(--space-3); min-width: 0; }
+.agenda-item > .item { flex: 1 1 auto; min-width: 0; }
+
+/* 분류 라벨. 섹션 제목이 하던 말을 항목마다 합니다.
+   색을 새로 만들지 않고 기존 토큰만 씁니다 — 결정은 강조, 할 일은 기본,
+   미결은 점선으로 "아직 안 정해짐"을 테두리로 말합니다. */
+.type-tag {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3.5rem;
+  height: var(--space-6);
+  margin-top: var(--space-4);
+  padding: 0 var(--space-3);
+  border: var(--border-thin) solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+}
+
+.type-tag--decision {
+  background: var(--color-accent-subtle);
+  border-color: var(--color-accent-border);
+  color: var(--color-accent-text);
+}
+
+.type-tag--action {
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+}
+
+.type-tag--open {
+  background: transparent;
+  border-style: dashed;
+  color: var(--color-text-subtle);
+}
+
+/* 좁은 화면에서는 라벨을 항목 위로 올립니다. 옆에 두면 카드가 더 좁아집니다 */
+@media (max-width: 540px) {
+  .agenda-item { flex-direction: column; gap: var(--space-2); }
+  .type-tag { margin-top: 0; }
+  .agenda { padding: var(--space-3); }
+}
+
+/* 한 열로 쌓이면 스크롤이 깁니다. 지금 어느 칸을 읽고 있는지 잃지 않도록
+   문서 섹션 제목을 화면 위에 붙입니다.
 
    붙는 범위는 그 섹션 안뿐입니다 — containing block이 .doc-section이라,
    섹션이 끝나면 제목도 같이 밀려 나가고 다음 제목이 올라옵니다.
-   제목 여러 개가 위에 쌓이지 않습니다.
 
    주의: 조상 중 하나라도 overflow(hidden/auto/scroll/clip)가 걸리면 sticky는
-   에러 없이 조용히 죽습니다. .page → .main → .result → .doc → .kanban-board →
-   .doc-section 경로에는 지금 없습니다. 이 경로에 스크롤 컨테이너를 넣으면
-   여기가 같이 깨집니다. */
-@media (max-width: 1199px) {
-  .doc-title {
-    position: sticky;
-    top: 0;
-    z-index: var(--z-sticky);
-    /* 배경이 없으면 지나가는 카드가 글자 뒤로 비칩니다 */
-    background: var(--color-bg);
-    padding-top: var(--space-3);
-  }
-}
-
-@media (min-width: 1200px) {
-  .page { max-width: 1440px; }
-
-  /* 원문과 회의 개요의 읽기 폭은 유지하고 보드만 넓힙니다. */
-  .header,
-  .main > :not(.result),
-  .result > :not(.doc),
-  .doc > :not(.kanban-board) {
-    width: 100%;
-    max-width: var(--width-content);
-    margin-inline: auto;
-  }
-
-  .kanban-board {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: var(--space-4);
-    align-items: stretch;
-  }
-
-  .kanban-board > .doc-section {
-    min-width: 0;
-    padding: var(--space-4);
-    background: var(--color-surface-muted);
-    border: var(--border-thin) solid var(--color-border);
-    border-radius: var(--radius-lg);
-  }
-
-  .kanban-board .doc-title { flex-wrap: wrap; }
-  .kanban-board .doc-count { margin-left: auto; }
-  .kanban-board .doc-note { flex-basis: 100%; margin-left: 0; line-height: var(--leading-sm); }
-  .kanban-board .item, .kanban-board .items { min-width: 0; }
-  .kanban-board .field-value { min-width: 0; overflow-wrap: anywhere; }
-  .kanban-board .item-quote { padding-left: 0; }
+   에러 없이 조용히 죽습니다. .page → .main → .result → .doc → .doc-section
+   경로에는 지금 없습니다. 이 경로에 스크롤 컨테이너를 넣으면 여기가 같이 깨집니다. */
+.doc-title {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  /* 배경이 없으면 지나가는 카드가 글자 뒤로 비칩니다 */
+  background: var(--color-bg);
+  padding-top: var(--space-3);
 }
 
 /* 원문 근거는 안건 내용 바로 아래에서 항상 읽을 수 있습니다. */

@@ -46,11 +46,11 @@ test('안건을 반복 수정해도 최초 원문과 분류를 보존한다', ()
 })
 
 test('직접 추가한 안건은 가짜 원문을 만들지 않고 빈 내용은 거부한다', () => {
-  const item = createItem('manual-1', 'action', '우산꽂이 구매 검토', null, null)
+  const item = createItem('manual-1', 'ag-1', 'action', '우산꽂이 구매 검토', null, null)
   assert.equal(item.userCreated, true)
   assert.equal(item.quote, '')
   assert.equal(item.original, undefined)
   assert.deepEqual(item.reviewReasons, ['no_assignee'])
-  assert.throws(() => createItem('manual-2', 'open', '  ', null, null))
+  assert.throws(() => createItem('manual-2', 'ag-1', 'open', '  ', null, null))
   assert.throws(() => editItem(candidate, { content: '  ' }))
 })

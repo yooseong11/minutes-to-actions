@@ -14,7 +14,7 @@ export type ItemPatch = Partial<Pick<ProcessedItem, EditableField>>
 const ASSIGNEE_REASONS = new Set<ReviewReason>(['no_assignee', 'assignee_unknown', 'assignee_unmatched', 'duplicate_name'])
 
 export function editItem(item: EditableItem, patch: ItemPatch): EditableItem {
-  if (patch.content !== undefined && !patch.content.trim()) throw new Error('안건 내용을 입력해 주세요.')
+  if (patch.content !== undefined && !patch.content.trim()) throw new Error('항목 내용을 입력해 주세요.')
   if (patch.due != null && toEpoch(patch.due) === null) throw new Error('올바른 날짜를 선택해 주세요.')
   const editedFields = [...new Set([...(item.editedFields ?? []), ...Object.keys(patch) as EditableField[]])]
   const next: EditableItem = {
@@ -42,9 +42,10 @@ export function editItem(item: EditableItem, patch: ItemPatch): EditableItem {
   return next
 }
 
-export function createItem(id: string, type: ItemType, content: string, assignee: RawAttendee | null, due: string | null): EditableItem {
+/** 직접 추가한 항목도 반드시 어느 안건에 속한다. 안건 없는 항목은 화면에 그릴 자리가 없다 */
+export function createItem(id: string, agendaId: string, type: ItemType, content: string, assignee: RawAttendee | null, due: string | null): EditableItem {
   const item: EditableItem = {
-    id, type, content, assignee, due, userCreated: true,
+    id, agendaId, type, content, assignee, due, userCreated: true,
     assigneeRaw: null, assigneeContextRaw: null, dueDateRaw: null, anchorDateRaw: null,
     blockedByRaw: null, quote: '', supersededQuote: null, reviewReasons: [],
     dueAnchor: null, dueMethod: 'none', assigneeCandidates: [], preselect: false, confidence: 'high',

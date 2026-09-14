@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { createItem, editItem, recalculateMeeting, type EditableMeeting } from '../lib/edit.js'
 import type { MeetingDateSource, ProcessedMeeting } from '../lib/postprocess.js'
-import type { ItemType } from '../lib/types.js'
 import ItemForm from './ItemForm.js'
 import ResultDoc from './ResultDoc.js'
 
@@ -16,7 +15,8 @@ export default function MeetingEditor({ meeting }: { meeting: ProcessedMeeting }
   const [draft, setDraft] = useState<EditableMeeting>(meeting)
   const [history, setHistory] = useState<EditableMeeting[]>([])
   const [dateInput, setDateInput] = useState(meeting.meetingDate ?? '')
-  const [adding, setAdding] = useState<ItemType | null>(null)
+  // 어느 안건에 추가할지. 항목은 반드시 안건 안에 들어가므로 id를 들고 있습니다
+  const [adding, setAdding] = useState<string | null>(null)
   const [notice, setNotice] = useState('')
   const [restoreVersion, setRestoreVersion] = useState(0)
   function commit(next: EditableMeeting, message: string) {
@@ -37,7 +37,7 @@ export default function MeetingEditor({ meeting }: { meeting: ProcessedMeeting }
   return (
           <section className="result">
             <p className="summary">
-              항목 {draft.items.length}개
+              안건 {draft.agendas.length}개 · 항목 {draft.items.length}개
               {' · '}손볼 항목 {draft.items.filter((i) => i.confidence === 'needs_review').length}개
             </p>
 
@@ -47,11 +47,14 @@ export default function MeetingEditor({ meeting }: { meeting: ProcessedMeeting }
               <span role="status" className="hint">{notice}</span>
             </div>
             {adding && <div className="item">
-              <h2 className="item-content">새 안건</h2>
+              <h2 className="item-content">
+                새 항목
+                <span className="hint"> · {draft.agendas.find(a => a.id === adding)?.title ?? '안건 없음'}</span>
+              </h2>
               <ItemForm key={adding} adding attendees={draft.attendees}
-                initial={{ type: adding, content: '', assignee: null, due: null }} onCancel={() => setAdding(null)}
+                initial={{ type: 'action', content: '', assignee: null, due: null }} onCancel={() => setAdding(null)}
                 onSave={values => {
-                  commit({ ...draft, items: [...draft.items, createItem(crypto.randomUUID(), values.type, values.content, values.assignee, values.due)] }, '안건을 추가했어요.')
+                  commit({ ...draft, items: [...draft.items, createItem(crypto.randomUUID(), adding, values.type, values.content, values.assignee, values.due)] }, '항목을 추가했어요.')
                   setAdding(null)
                 }} />
             </div>}
@@ -84,7 +87,7 @@ export default function MeetingEditor({ meeting }: { meeting: ProcessedMeeting }
                 if (!Object.keys(patch).length) return
                 commit({ ...draft, items: draft.items.map(item => item.id === id ? editItem(item, patch) : item) }, '수정을 적용했어요.')
               }}
-              onDelete={id => commit({ ...draft, items: draft.items.filter(item => item.id !== id) }, '안건을 삭제했어요. 되돌릴 수 있습니다.')} />
+              onDelete={id => commit({ ...draft, items: draft.items.filter(item => item.id !== id) }, '항목을 삭제했어요. 되돌릴 수 있습니다.')} />
 
             <details className="excluded">
               <summary className="excluded-summary">

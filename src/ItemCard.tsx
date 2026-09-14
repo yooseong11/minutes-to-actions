@@ -13,7 +13,8 @@ import { REVIEW_REASON } from '../lib/labels.js'
  *   - 코드가 환산한 값(기한·담당자) 옆에 **원문 표현을 같이 둡니다.**
  *     환산이 틀렸을 때 원문이 없으면 틀린 걸 알아볼 방법이 없습니다.
  *
- * 분류(결정/할 일/미결)는 여기서 안 그립니다. 섹션 제목이 이미 말하고 있습니다.
+ * 분류(결정/할 일/미결)는 여기서 안 그립니다. 카드 왼쪽의 라벨이 말합니다 —
+ * 4.5에서 섹션이 안건으로 바뀌면서, 분류는 섹션 제목이 아니라 항목 라벨이 되었습니다.
  *
  * 수정한 값은 원문 근거와 구분하고, 삭제한 필드는 미지정으로 표시합니다.
  */
@@ -42,7 +43,7 @@ export default function ItemCard({ item, attendees, onEdit, onDelete }: {
   return (
     <article className="item">
       <div className="item-toolbar">
-        <span className="hint">{item.userCreated ? '직접 추가한 안건' : item.editedFields?.length ? '사용자가 수정한 안건' : ''}</span>
+        <span className="hint">{item.userCreated ? '직접 추가한 항목' : item.editedFields?.length ? '사용자가 수정한 항목' : ''}</span>
         <div className="actions">
           <button type="button" className="button button--quiet button--edit" onClick={() => setEditing(true)}>수정</button>
           <button type="button" className="button button--quiet button--danger" onClick={onDelete}>삭제</button>
