@@ -222,3 +222,183 @@
 }
 
 .button--quiet:hover { background: var(--color-accent-subtle); }
+
+/* ---- 항목 카드 ---------------------------------------------------------- */
+
+.items { display: flex; flex-direction: column; gap: var(--space-3); }
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: var(--border-thin) solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.item-head { display: flex; align-items: flex-start; gap: var(--space-3); }
+
+/* 분류는 정보이지 경고가 아닙니다. 배지와 다른 모양으로 둡니다. */
+.type {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: var(--space-6);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+}
+
+.type--decision { background: var(--color-accent-subtle); color: var(--color-accent-text); }
+
+.item-content {
+  font-size: var(--text-base);
+  line-height: var(--leading-base);
+  font-weight: var(--weight-medium);
+}
+
+/* .superseded 는 범례와 같은 클래스를 그대로 씁니다 */
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-left: calc(var(--space-6) + var(--space-3));
+}
+
+.field { display: flex; align-items: baseline; gap: var(--space-3); }
+
+.field-key {
+  flex: none;
+  width: var(--space-14);
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-subtle);
+}
+
+.field-value {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.field-empty { color: var(--color-text-subtle); }
+
+/* 코드가 환산한 값 옆의 원문. 원문이 없으면 환산이 틀린 걸 알아볼 수 없습니다. */
+.field-raw {
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-subtle);
+}
+
+.chips { display: inline-flex; flex-wrap: wrap; gap: var(--space-2); }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  height: var(--space-6);
+  padding: 0 var(--space-2);
+  border: var(--border-thin) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+}
+
+/* 후보가 정확히 1명일 때만. 2명 이상이면 아무것도 고르지 않습니다. */
+.chip--preselect {
+  border-color: var(--color-accent-border);
+  background: var(--color-accent-subtle);
+  color: var(--color-accent-text);
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding-left: calc(var(--space-6) + var(--space-3));
+}
+
+.item-note {
+  padding-left: calc(var(--space-6) + var(--space-3));
+  font-size: var(--text-xs);
+  line-height: var(--leading-sm);
+  color: var(--color-text-muted);
+}
+
+.item-quote { padding-left: calc(var(--space-6) + var(--space-3)); }
+
+.item-quote-summary {
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-subtle);
+  cursor: pointer;
+}
+
+.item-quote-text {
+  margin-top: var(--space-2);
+  padding: var(--space-3);
+  background: var(--color-surface-sunken);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  line-height: var(--leading-sm);
+  color: var(--color-text-muted);
+  white-space: pre-wrap;
+}
+
+.empty {
+  padding: var(--space-6);
+  text-align: center;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-text-subtle);
+}
+
+/* ---- 제외 항목 내용 ------------------------------------------------------ */
+
+.rejected-item {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: var(--border-thin) solid var(--color-excluded-border);
+}
+
+.rejected-content {
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-excluded-text);
+}
+
+.rejected-quote {
+  margin-top: var(--space-1);
+  font-size: var(--text-xs);
+  line-height: var(--leading-sm);
+  color: var(--color-text-subtle);
+}
+
+/* ---- 원본 JSON ----------------------------------------------------------- */
+
+.raw-wrap {
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-md);
+}
+
+.raw-summary {
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-subtle);
+  cursor: pointer;
+}
+
+.raw-wrap .raw { margin-top: var(--space-3); }

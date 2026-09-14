@@ -1,12 +1,12 @@
 import { useState } from 'react'
+import { countReasons } from '../lib/labels.js'
 import type { MeetingDateSource } from '../lib/postprocess.js'
-import type { ReviewReason } from '../lib/types.js'
+import ItemCard from './ItemCard.js'
 import { useExtract } from './useExtract.js'
 import './App.css'
 
 /**
  * 섹션 3 — 붙여넣기 → 추출 → 결과.
- * 결과는 아직 날것(JSON)으로 보여줍니다. 항목 렌더는 다음 단계입니다.
  *
  * 회의 날짜는 붙여넣기 전에 묻지 않습니다. 날짜부터 고르게 하면 쓰기 싫어집니다.
  * 대신 기준일 출처를 셋으로 나눠 서버가 정합니다 — 사용자 지정 > 원문 > 오늘.
@@ -37,19 +37,6 @@ const DATE_SOURCE_LABEL: Record<MeetingDateSource, string> = {
   none: '기준 날짜가 없어서 기한을 환산하지 못했어요',
 }
 
-const BADGE_STYLE: Record<ReviewReason, 'warn' | 'ask'> = {
-  no_assignee: 'ask',
-  assignee_unknown: 'ask',
-  assignee_unmatched: 'ask',
-  duplicate_name: 'ask',
-  unit_unclear: 'ask',
-  due_unparseable: 'warn',
-  blocked: 'warn',
-  conditional: 'warn',
-  ambiguous_intent: 'warn',
-  superseded: 'warn',
-}
-
 export default function App() {
   const [text, setText] = useState('')
   // 사용자가 날짜칸을 직접 고쳤을 때만 값이 들어갑니다. 안 고쳤으면 null.
@@ -57,8 +44,6 @@ export default function App() {
   const { state, extract } = useExtract()
 
   const loading = state.status === 'loading'
-  const ask = Object.values(BADGE_STYLE).filter((v) => v === 'ask').length
-  const warn = Object.values(BADGE_STYLE).length - ask
 
   // 날짜칸에 보이는 값: 고른 값 > 서버가 쓴 기준일 > 오늘.
   // 서버가 원문에서 9/8을 읽었으면 칸에도 9/8이 올라옵니다. 오늘로 남겨두면
@@ -102,6 +87,7 @@ export default function App() {
             <p className="summary">
               항목 {state.meeting.items.length}개
               {' · '}참석자 {state.meeting.attendees.length}명
+              {' · '}손볼 항목 {state.meeting.items.filter((i) => i.confidence === 'needs_review').length}개
             </p>
 
             {/* 기한 환산은 전부 이 날짜를 기준으로 역산합니다.
@@ -126,6 +112,16 @@ export default function App() {
               )}
             </div>
 
+            {state.meeting.items.length === 0 ? (
+              <p className="empty">항목이 하나도 나오지 않았어요. 원문을 확인해 주세요.</p>
+            ) : (
+              <div className="items">
+                {state.meeting.items.map((it) => (
+                  <ItemCard key={it.id} item={it} />
+                ))}
+              </div>
+            )}
+
             <details className="excluded">
               <summary className="excluded-summary">
                 원문 대조 실패로 제외됨 {state.meeting.rejected.length}건
@@ -133,12 +129,23 @@ export default function App() {
               <p className="excluded-note">
                 인용문이 원문에 없어 항목에서 뺀 것들입니다. 대부분은 지어낸 내용이지만,
                 줄바꿈 차이 때문에 멀쩡한 항목이 걸리기도 합니다. 조용히 버리면
-                액션아이템 하나가 사라진 걸 모르게 되므로 건수를 남겨둡니다.
+                액션아이템 하나가 사라진 걸 모르게 되므로 내용까지 남겨둡니다.
               </p>
+              {state.meeting.rejected.map((r, i) => (
+                <div className="rejected-item" key={`${r.item.quote}|${i}`}>
+                  <p className="rejected-content">{r.item.content || '(내용 없음)'}</p>
+                  <p className="rejected-quote">
+                    원문에 없던 {r.hallucinated.join(' / ')}: “{r.item.quote}”
+                  </p>
+                </div>
+              ))}
             </details>
 
-            {/* 항목 렌더는 다음 단계. 지금은 후처리 결과를 그대로 봅니다 */}
-            <pre className="raw">{JSON.stringify(state.meeting, null, 2)}</pre>
+            {/* 카드가 틀렸을 때 대조할 원본. 접어 두되 지우지 않습니다 */}
+            <details className="raw-wrap">
+              <summary className="raw-summary">후처리 결과 원본 (JSON)</summary>
+              <pre className="raw">{JSON.stringify(state.meeting, null, 2)}</pre>
+            </details>
           </section>
         )}
 
@@ -148,8 +155,8 @@ export default function App() {
           <span className="badge badge--ask">입력 필요</span>
           <span className="superseded">번복됨</span>
           <p className="legend-note">
-            표시가 없으면 그대로 저장됩니다. 확인 필요({warn}종)는 읽고 넘어가면 되고,
-            입력 필요({ask}종)는 빈칸을 채워야 저장됩니다.
+            표시가 없으면 그대로 저장됩니다. 확인 필요({countReasons('warn')}종)는 읽고 넘어가면 되고,
+            입력 필요({countReasons('ask')}종)는 빈칸을 채워야 저장됩니다.
           </p>
         </section>
       </main>
