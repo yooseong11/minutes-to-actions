@@ -84,13 +84,12 @@ export default function App() {
           </button>
           {loading && <span className="hint">최대 55초 걸릴 수 있어요.</span>}
 
-          {/* 개발 중에만 보입니다. 프로덕션 빌드에서는 통째로 사라집니다.
-              추출 버튼은 누를 때마다 OpenAI 토큰이 나갑니다. 화면만 고칠 때는 이쪽입니다. */}
-          {import.meta.env.DEV && (
+          
+          
             <button className="button button--quiet" type="button" onClick={loadSample} disabled={loading}>
               더미 데이터 (01번)
             </button>
-          )}
+          
         </div>
 
         {state.status === 'error' && (
