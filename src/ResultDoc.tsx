@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { SECTIONS } from '../lib/labels.js'
 import type { MeetingDateSource } from '../lib/postprocess.js'
-import type { EditableItem, EditableMeeting, TpoValues } from '../lib/edit.js'
+import type { AttendeeDraft, EditableItem, EditableMeeting, TpoValues } from '../lib/edit.js'
 import ItemCard from './ItemCard.js'
 
 /**
@@ -40,28 +40,19 @@ const TYPE_ORDER = SECTIONS.map((s) => s.type)
 export default function ResultDoc({
   meeting,
   dateSourceLabel,
-  onSaveTpo, onEdit, onDelete, onAdd,
+  onSaveTpo, onSaveAttendees, onEdit, onDelete, onAdd,
 }: {
   meeting: EditableMeeting
   dateSourceLabel: Record<MeetingDateSource, string>
   onSaveTpo: (values: TpoValues) => void
+  onSaveAttendees: (drafts: AttendeeDraft[]) => void
   onEdit: (id: string) => void
   onDelete: (id: string) => void
   onAdd: (agendaId: string) => void
 }) {
   return (
     <div className="doc">
-      <Section title="참석자" note="Joiner">
-        {meeting.attendees.length === 0 ? (
-          <p className="doc-empty">본문에서 참석자를 찾지 못했습니다.</p>
-        ) : (
-          <p className="doc-line">
-            {meeting.attendees
-              .map((a) => (a.contextRaw ? `${a.nameRaw}(${a.contextRaw})` : a.nameRaw))
-              .join(', ')}
-          </p>
-        )}
-      </Section>
+      <AttendeeSection meeting={meeting} onSave={onSaveAttendees} />
 
       <TpoSection meeting={meeting} dateSourceLabel={dateSourceLabel} onSave={onSaveTpo} />
 
@@ -154,6 +145,184 @@ function Agenda({
 }
 
 /**
+ * 편집 영역 바깥을 누르면 취소. TPO와 참석자가 같이 씁니다.
+ *
+ * click이 아니라 pointerdown으로 잡습니다 — 저장 버튼을 누를 때 pointerdown이
+ * 먼저 오는데, 그 target은 폼 안이라 취소로 새지 않습니다.
+ */
+function useCancelOnOutside(editing: boolean, stop: () => void) {
+  const formRef = useRef<HTMLFormElement>(null)
+  useEffect(() => {
+    if (!editing) return
+    const cancelOutside = (event: PointerEvent) => {
+      if (!formRef.current?.contains(event.target as Node)) stop()
+    }
+    document.addEventListener('pointerdown', cancelOutside)
+    return () => document.removeEventListener('pointerdown', cancelOutside)
+  }, [editing, stop])
+  return formRef
+}
+
+/**
+ * 읽기 모드와 수정 모드가 같은 자리에 서는 버튼.
+ *
+ * **key가 반드시 있어야 합니다.** 없으면 React가 두 버튼을 같은 자리의 같은
+ * <button>으로 보고 DOM 노드를 재사용합니다. 그러면 「수정」을 누른 순간 그
+ * 노드의 type이 button → submit으로 바뀌고, 브라우저가 아직 처리 중이던 클릭의
+ * 기본 동작이 **폼 제출**이 됩니다. 곧바로 onSubmit이 돌아 편집이 바로 닫힙니다.
+ */
+function EditBar({ editing, onStart }: { editing: boolean; onStart: () => void }) {
+  return (
+    <div className="tpo-bar">
+      {editing ? (
+        <button key="save" type="submit" className="button button--quiet button--strong">
+          저장
+        </button>
+      ) : (
+        <button key="edit" type="button" className="button button--quiet" onClick={onStart}>
+          수정
+        </button>
+      )}
+    </div>
+  )
+}
+
+/** 글리프 문자(×)는 폰트에 따라 곱셈기호로 보입니다. currentColor라 다크 모드도 따라옵니다 */
+function Icon({ path }: { path: string }) {
+  return (
+    <svg className="icon" viewBox="0 0 14 14" aria-hidden="true" focusable="false">
+      <path d={path} fill="none" stroke="currentColor" strokeWidth="1.3"
+        strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+/** 화면에서만 쓰는 식별자. React가 칩을 헷갈리지 않게 붙입니다 */
+interface AttendeeRow extends AttendeeDraft { uid: string }
+
+function toRows(attendees: EditableMeeting['attendees']): AttendeeRow[] {
+  return attendees.map((person, index) => ({
+    uid: `o${index}`,
+    nameRaw: person.nameRaw,
+    contextRaw: person.contextRaw,
+    originalIndex: index,
+  }))
+}
+
+/**
+ * 참석자. TPO와 같은 규칙입니다 — 읽기 모드와 수정 모드가 같은 DOM이고,
+ * 모드가 바뀔 때 달라지는 것은 **색과 visibility뿐**입니다.
+ *
+ * 칩으로 만든 이유: 이 앱을 쓰는 사람은 개발자가 아닙니다. 한 줄 텍스트에
+ * "이름(소속), 이름(소속)" 형식을 지켜 적게 하면 쉼표나 괄호가 어긋납니다.
+ * 사람마다 칸을 나눠두면 형식을 지킬 일 자체가 없어집니다.
+ *
+ * 지우기(×)와 「+ 참석자」는 읽기 모드에도 자리를 잡아둡니다(visibility).
+ * display로 없애면 수정을 누를 때마다 칩 폭과 줄바꿈이 달라집니다.
+ */
+function AttendeeSection({ meeting, onSave }: {
+  meeting: EditableMeeting
+  onSave: (drafts: AttendeeDraft[]) => void
+}) {
+  const [editing, setEditing] = useState(false)
+  const [rows, setRows] = useState<AttendeeRow[]>(() => toRows(meeting.attendees))
+  const added = useRef(0)
+  const formRef = useCancelOnOutside(editing, useCallback(() => setEditing(false), []))
+
+  const shown = editing ? rows : toRows(meeting.attendees)
+
+  function patch(uid: string, key: 'nameRaw' | 'contextRaw', value: string) {
+    setRows(current => current.map(row => row.uid === uid ? { ...row, [key]: value } : row))
+  }
+
+  return (
+    <Section title="참석자" note="Joiner">
+      <form
+        ref={formRef}
+        className="people-form"
+        onSubmit={event => {
+          event.preventDefault()
+          onSave(rows.map(row => ({
+            nameRaw: row.nameRaw,
+            contextRaw: row.contextRaw,
+            originalIndex: row.originalIndex,
+          })))
+          setEditing(false)
+        }}
+        onKeyDown={event => { if (editing && event.key === 'Escape') setEditing(false) }}
+      >
+        <EditBar editing={editing} onStart={() => {
+          setRows(toRows(meeting.attendees))
+          setEditing(true)
+        }} />
+
+        {shown.length === 0 && (
+          <p className="doc-empty">본문에서 참석자를 찾지 못했습니다.</p>
+        )}
+
+        <ul className="people">
+          {shown.map(row => (
+            <li className={editing ? 'person person--editing' : 'person'} key={row.uid}>
+              <input
+                className="person__name"
+                value={row.nameRaw}
+                readOnly={!editing}
+                required
+                size={Math.max(row.nameRaw.length, 3)}
+                aria-label="참석자 이름"
+                onChange={event => patch(row.uid, 'nameRaw', event.currentTarget.value)}
+              />
+              {/* 소속이 비어 있고 읽기 모드면 안 보입니다. 자리는 그대로 둡니다 */}
+              <span className={!editing && !row.contextRaw ? 'person__context person__context--idle' : 'person__context'}>
+                <span aria-hidden="true">(</span>
+                <input
+                  className="person__context-input"
+                  value={row.contextRaw ?? ''}
+                  readOnly={!editing}
+                  placeholder="소속"
+                  size={Math.max((row.contextRaw ?? '').length, 2)}
+                  aria-label="소속"
+                  onChange={event => patch(row.uid, 'contextRaw', event.currentTarget.value)}
+                />
+                <span aria-hidden="true">)</span>
+              </span>
+              <button
+                type="button"
+                className={editing ? 'person__remove' : 'person__remove person__remove--idle'}
+                tabIndex={editing ? 0 : -1}
+                aria-hidden={!editing}
+                aria-label={`${row.nameRaw} 빼기`}
+                title="참석자에서 빼기"
+                onClick={() => setRows(current => current.filter(other => other.uid !== row.uid))}
+              >
+                <Icon path="M4 4l6 6M10 4l-6 6" />
+              </button>
+            </li>
+          ))}
+
+          <li className={editing ? 'person-add' : 'person-add person-add--idle'}>
+            <button
+              type="button"
+              className="button button--quiet"
+              tabIndex={editing ? 0 : -1}
+              aria-hidden={!editing}
+              onClick={() => {
+                added.current += 1
+                setRows(current => [...current, {
+                  uid: `n${added.current}`, nameRaw: '', contextRaw: '', originalIndex: null,
+                }])
+              }}
+            >
+              + 참석자
+            </button>
+          </li>
+        </ul>
+      </form>
+    </Section>
+  )
+}
+
+/**
  * TPO 칸. **읽기 모드와 수정 모드가 같은 DOM입니다.**
  *
  * 예전에는 모드마다 다른 트리를 냈습니다(`dl` ↔ `form`). 그러면 「수정」을
@@ -177,25 +346,10 @@ function TpoSection({ meeting, dateSourceLabel, onSave }: {
   const [values, setValues] = useState(() => tpoFormValues(meeting))
   const edited = new Set(meeting.editedTpoFields ?? [])
   const firstInput = useRef<HTMLInputElement>(null)
-  const formRef = useRef<HTMLFormElement>(null)
+  const formRef = useCancelOnOutside(editing, useCallback(() => setEditing(false), []))
 
   // input이 항상 떠 있으므로 autoFocus가 다시 걸리지 않습니다. 직접 옮깁니다.
   useEffect(() => { if (editing) firstInput.current?.focus() }, [editing])
-
-  /*
-   * TPO 입력 영역 바깥을 누르면 취소입니다. 취소 버튼을 두지 않는 대신입니다.
-   * 기준은 폼(입력칸 + 저장 버튼)이고 제목줄은 바깥으로 칩니다.
-   * click이 아니라 pointerdown으로 잡습니다 — 저장 버튼을 누를 때
-   * pointerdown이 먼저 오는데, 그 target은 폼 안이라 취소되지 않습니다.
-   */
-  useEffect(() => {
-    if (!editing) return
-    const cancelOutside = (event: PointerEvent) => {
-      if (!formRef.current?.contains(event.target as Node)) setEditing(false)
-    }
-    document.addEventListener('pointerdown', cancelOutside)
-    return () => document.removeEventListener('pointerdown', cancelOutside)
-  }, [editing])
 
   // 읽기 모드에는 저장된 값을, 수정 모드에는 편집 중인 값을 냅니다.
   const shown = editing ? values : tpoFormValues(meeting)
@@ -221,30 +375,10 @@ function TpoSection({ meeting, dateSourceLabel, onSave }: {
         }}
         onKeyDown={event => { if (editing && event.key === 'Escape') setEditing(false) }}
       >
-        {/*
-          * 버튼은 칸 위 오른쪽에 하나뿐입니다. 두 모드의 높이가 같아 줄이 밀리지 않습니다.
-          *
-          * **key가 반드시 있어야 합니다.** 없으면 React가 두 버튼을 같은 자리의
-          * 같은 <button>으로 보고 DOM 노드를 재사용합니다. 그러면 「수정」을 누른
-          * 순간 그 노드의 type이 button → submit으로 바뀌고, 브라우저가 아직
-          * 처리 중이던 클릭의 기본 동작이 **폼 제출**이 됩니다. 곧바로 onSubmit이
-          * 돌아 setEditing(false) — 눌러도 수정 모드로 안 들어가는 것처럼 보입니다.
-          * key를 주면 노드를 새로 만들어 이 경로가 끊깁니다.
-          */}
-        <div className="tpo-bar">
-          {editing ? (
-            <button key="save" type="submit" className="button button--quiet button--strong">
-              저장
-            </button>
-          ) : (
-            <button key="edit" type="button" className="button button--quiet" onClick={() => {
-              setValues(tpoFormValues(meeting))
-              setEditing(true)
-            }}>
-              수정
-            </button>
-          )}
-        </div>
+        <EditBar editing={editing} onStart={() => {
+          setValues(tpoFormValues(meeting))
+          setEditing(true)
+        }} />
 
         <TpoRow label="날짜" type="date" editing={editing} inputRef={firstInput}
           value={shown.meetingDate} onChange={change('meetingDate')}

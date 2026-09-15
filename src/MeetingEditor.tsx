@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { createItem, editItem, editMeetingTpo, type EditableMeeting, type ItemPatch } from '../lib/edit.js'
+import { createItem, editItem, editMeetingAttendees, editMeetingTpo, type EditableMeeting, type ItemPatch } from '../lib/edit.js'
 import type { MeetingDateSource, ProcessedMeeting } from '../lib/postprocess.js'
 import ItemModal from './ItemModal.js'
 import type { ItemValues } from './ItemForm.js'
@@ -58,6 +58,18 @@ export default function MeetingEditor({ meeting }: { meeting: ProcessedMeeting }
                 commit(next, dateChanged
                   ? 'TPO를 수정하고 자동 계산된 기한을 다시 계산했어요.'
                   : 'TPO를 수정했어요.')
+              }}
+              onSaveAttendees={drafts => {
+                const next = editMeetingAttendees(draft, drafts)
+                if (next === draft) {
+                  setNotice('변경된 내용이 없어요.')
+                  return
+                }
+                // 담당자가 딸려 바뀌는 게 조용히 일어나면 안 됩니다. 문장으로 알립니다.
+                const assigneeChanged = next.items.some((item, index) => item !== draft.items[index])
+                commit(next, assigneeChanged
+                  ? '참석자를 수정하고, 그 사람이 담당이던 항목도 함께 맞췄어요.'
+                  : '참석자를 수정했어요.')
               }}
               onAdd={agendaId => setEditor({ mode: 'add', agendaId })}
               onEdit={itemId => setEditor({ mode: 'edit', itemId })}

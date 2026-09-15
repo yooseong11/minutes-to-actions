@@ -576,6 +576,116 @@
 
 .tpo-note--idle { visibility: hidden; }
 
+/* ---- 참석자 --------------------------------------------------------------
+ * TPO와 같은 규칙입니다. 모드가 바뀔 때 달라지는 것은 색과 visibility뿐이고,
+ * 여백·높이·글자 크기는 두 모드가 같은 값을 씁니다.
+ * 지우기(×)와 「+ 참석자」는 읽기 모드에서도 자리를 차지합니다 — display로
+ * 없애면 칩 폭과 줄바꿈이 달라져 수정을 누를 때마다 목록이 출렁입니다.
+ */
+/*
+ * 한 줄에 한 사람씩 세로로 쌓습니다.
+ *
+ * 가로로 늘어놓으면 소속 없는 사람 뒤에 **빈칸이 구멍처럼 보입니다** —
+ * 수정 모드에서 소속 칸이 들어갈 자리를 읽기 모드에도 남겨두기 때문입니다
+ * (그 자리를 안 남기면 수정을 누를 때마다 목록이 출렁입니다).
+ * 세로로 쌓으면 그 자리가 줄 끝으로 가서 눈에 띄지 않습니다.
+ */
+.people {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  margin: 0;
+  padding-left: var(--space-4);
+  list-style: none;
+}
+
+.person {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: calc(var(--leading-sm) + 2 * var(--border-thin));
+  padding: 0 var(--space-1);
+  /* 읽기 모드에도 1px을 잡아둡니다. 수정 모드에서 색만 들어옵니다 */
+  border: var(--border-thin) solid transparent;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+}
+
+/* 글머리표는 칩 테두리 **바깥**에 둡니다. 안에 넣으면 수정 모드 상자에 갇힙니다 */
+.person::before {
+  content: '·';
+  position: absolute;
+  left: calc(-1 * var(--space-3));
+  color: var(--color-text-subtle);
+}
+
+.person--editing {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+}
+
+.person input {
+  box-sizing: border-box;
+  /* 글자 폭에 맞춰 줄어듭니다. 없는 브라우저는 size 속성이 대신합니다 */
+  field-sizing: content;
+  min-width: var(--space-8);
+  max-width: 100%;
+  /* 괄호가 글자에 붙어야 "김대리(기획)"으로 읽힙니다 */
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+}
+
+.person input:read-only { cursor: default; }
+
+.person__name { padding-left: var(--space-1); }
+
+/* 소속은 이름보다 흐리게 — 같은 칩 안에서 무엇이 이름인지 구분됩니다 */
+.person__context {
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-text-subtle);
+}
+
+.person__context-input { color: var(--color-text-subtle); }
+
+/* 소속이 비었고 읽기 모드일 때. 자리는 남기고 글자만 감춥니다 */
+.person__context--idle { visibility: hidden; }
+
+.person__remove {
+  margin-left: var(--space-1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--space-5);
+  height: var(--space-5);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-subtle);
+  cursor: pointer;
+}
+
+.person__remove:hover { background: var(--color-danger-bg); color: var(--color-danger-text); }
+
+.person__remove--idle,
+.person-add--idle { visibility: hidden; }
+
+/* 「+ 참석자」도 읽기 모드에서 자리를 지킵니다 */
+.person-add { display: inline-flex; }
+.person-add .button { align-self: auto; }
+
+.people-form { display: flex; flex-direction: column; gap: var(--space-2); }
+
 /* 추출 후 편집 */
 .item-toolbar, .edit-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
 .item-toolbar { justify-content: space-between; }
