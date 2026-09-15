@@ -156,6 +156,9 @@
   /* ---------- 12. 테두리 두께 ---------- */
   --border-thin:   1px;    /* 헤어라인 예외 */
   --border-thick:  4px;    /* 취소선·좌측 강조 막대 */
+  /* 포커스 테두리. 4px(--space-1)은 한 줄짜리 입력칸에 두르면 칸이 부어 보입니다.
+     2px은 --border-thin·스피너와 같은 헤어라인 예외입니다 */
+  --border-focus:  2px;
 
   /* ---------- 13. 그림자 ---------- */
   --shadow-sm: 0 1px 4px oklch(14.8% 0.004 228.8 / 0.06);
@@ -296,7 +299,7 @@ body {
 :where(a) { color: var(--color-accent-text); }
 
 :where(:focus-visible) {
-  outline: var(--space-1) solid var(--color-focus-ring);
+  outline: var(--border-focus) solid var(--color-focus-ring);
   outline-offset: var(--border-thin);
   border-radius: var(--radius-sm);
 }

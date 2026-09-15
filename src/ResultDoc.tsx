@@ -267,6 +267,7 @@ function AttendeeSection({ meeting, onSave }: {
                 className="person__name"
                 value={row.nameRaw}
                 readOnly={!editing}
+                tabIndex={editing ? 0 : -1}
                 required
                 size={Math.max(row.nameRaw.length, 3)}
                 aria-label="참석자 이름"
@@ -279,6 +280,7 @@ function AttendeeSection({ meeting, onSave }: {
                   className="person__context-input"
                   value={row.contextRaw ?? ''}
                   readOnly={!editing}
+                  tabIndex={editing ? 0 : -1}
                   placeholder="소속"
                   size={Math.max((row.contextRaw ?? '').length, 2)}
                   aria-label="소속"
@@ -419,6 +421,9 @@ function tpoFormValues(meeting: EditableMeeting): TpoFormState {
  * 회의록에 장소가 안 적혀 있다는 것과, 장소 칸이 화면에 없는 것은 다릅니다.
  * 날짜만 수정 중일 때 `type="date"`로 바뀌는데, 폭을 CSS에서 못 박아 뒀으므로
  * 달력 아이콘이 상자 **안에서** 생겼다 사라질 뿐 줄이 움직이지 않습니다.
+ *
+ * 읽기 모드에서는 `tabIndex={-1}`로 탭 순서에서 뺍니다. 포커스 테두리를 지웠기
+ * 때문에, 탭이 여기 멈추면 사용자는 자기가 어디에 있는지 알 수 없게 됩니다.
  */
 function TpoRow({ label, value, onChange, editing, type = 'text', raw, edited = false, inputRef }: {
   label: string
@@ -440,6 +445,7 @@ function TpoRow({ label, value, onChange, editing, type = 'text', raw, edited = 
           type={editing && type === 'date' ? 'date' : 'text'}
           value={value}
           readOnly={!editing}
+          tabIndex={editing ? 0 : -1}
           placeholder="원문에 없음"
           onChange={event => onChange(event.currentTarget.value)}
         />
