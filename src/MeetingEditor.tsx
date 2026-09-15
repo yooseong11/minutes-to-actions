@@ -69,15 +69,8 @@ export default function MeetingEditor({ meeting }: { meeting: ProcessedMeeting }
   }
   return (
           <section className="result">
-            <p className="summary">
-              안건 {draft.agendas.length}개 · 항목 {draft.items.length}개
-              {' · '}손볼 항목 {draft.items.filter((i) => i.confidence === 'needs_review').length}개
-            </p>
-
             <p className="hint">수정은 이 화면에 적용됩니다. 새로고침하거나 다시 추출하면 초기화됩니다.</p>
             <div className="actions">
-              <button type="button" className="button button--quiet" onClick={copyMarkdown}>마크다운 복사</button>
-              <button type="button" className="button button--quiet" onClick={downloadCsv}>CSV 내려받기</button>
               <button type="button" className="button button--quiet" disabled={!history.length} onClick={undo}>마지막 변경 되돌리기</button>
               <span role="status" className="hint">{notice}</span>
             </div>
@@ -164,11 +157,15 @@ export default function MeetingEditor({ meeting }: { meeting: ProcessedMeeting }
               ))}
             </details>
 
-            {/* 현재 편집값과 최초 추출 결과를 함께 확인할 수 있습니다. */}
-            <details className="raw-wrap">
-              <summary className="raw-summary">현재 편집 결과 (JSON)</summary>
-              <pre className="raw">{JSON.stringify(draft, null, 2)}</pre>
-            </details>
+            {/*
+              내보내기는 문서를 끝까지 읽고 난 자리에 둡니다. 여기 한 군데뿐입니다 —
+              읽기 전에 내보낼 일이 없고, 같은 버튼이 위아래에 있으면 어느 쪽이
+              최신 편집을 담는지 사용자가 묻게 됩니다.
+            */}
+            <div className="export-bar">
+              <button type="button" className="button button--export" onClick={copyMarkdown}>마크다운 복사</button>
+              <button type="button" className="button button--export" onClick={downloadCsv}>CSV 내려받기</button>
+            </div>
           </section>
   )
 }

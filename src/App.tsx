@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { countReasons } from '../lib/labels.js'
 import { SAMPLE_01, SAMPLE_01_TEXT } from './fixtures/sample01.js'
 import MeetingEditor from './MeetingEditor.js'
 import { useExtract } from './useExtract.js'
@@ -99,17 +98,6 @@ export default function App() {
         {state.status === 'done' && (
           <MeetingEditor key={state.resultId} meeting={state.meeting} />
         )}
-
-        <section className="legend">
-          <h2 className="legend-title">표시 규칙</h2>
-          <span className="badge badge--warn">확인 필요</span>
-          <span className="badge badge--ask">입력 필요</span>
-          <span className="superseded">번복됨</span>
-          <p className="legend-note">
-            확인 필요({countReasons('warn')}종)는 원문과 대조해 주세요.
-            입력 필요({countReasons('ask')}종)는 수정 버튼으로 보완할 수 있으며, 모르면 비워둘 수 있습니다.
-          </p>
-        </section>
       </main>
     </div>
   )

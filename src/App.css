@@ -105,61 +105,12 @@
   .spinner { animation: none; }
 }
 
-.legend {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-4);
-  background: var(--color-surface-muted);
-  border-radius: var(--radius-lg);
-}
-
-.legend-title {
-  flex-basis: 100%;
-  font-size: var(--text-xs);
-  line-height: var(--leading-xs);
-  font-weight: var(--weight-semibold);
-  color: var(--color-text-muted);
-}
-
-.badge {
-  display: inline-flex;
-  align-items: center;
-  height: var(--space-6);
-  padding: 0 var(--space-3);
-  border-radius: var(--radius-full);
-  border: var(--border-thin) solid;
-  font-size: var(--text-xs);
-  line-height: var(--leading-xs);
-  font-weight: var(--weight-medium);
-}
-
-.badge--warn {
-  background: var(--color-warn-bg);
-  border-color: var(--color-warn-border);
-  color: var(--color-warn-text);
-}
-
-.badge--ask {
-  background: var(--color-ask-bg);
-  border-color: var(--color-ask-border);
-  color: var(--color-ask-text);
-}
-
 .superseded {
   font-size: var(--text-xs);
   line-height: var(--leading-xs);
   color: var(--color-superseded-text);
   text-decoration: line-through;
   text-decoration-color: var(--color-superseded-stroke);
-}
-
-.legend-note {
-  flex-basis: 100%;
-  font-size: var(--text-xs);
-  line-height: var(--leading-xs);
-  color: var(--color-text-subtle);
 }
 
 /* 제외 항목 — 빨강을 쓰지 않습니다. 사용자가 고칠 수 있는 일이 아닙니다. */
@@ -208,26 +159,6 @@
 }
 
 .result { display: flex; flex-direction: column; gap: var(--space-3); }
-
-.summary {
-  font-size: var(--text-base);
-  line-height: var(--leading-base);
-  font-weight: var(--weight-medium);
-}
-
-.raw {
-  max-height: 480px;
-  overflow: auto;
-  margin: 0;
-  padding: var(--space-4);
-  background: var(--color-surface-sunken);
-  border-radius: var(--radius-lg);
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  line-height: var(--leading-sm);
-  white-space: pre-wrap;
-  word-break: break-all;
-}
 
 .button--quiet {
   height: var(--control-height-sm);
@@ -319,12 +250,6 @@
 }
 
 
-.badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  }
-
 .item-note {
     font-size: var(--text-xs);
   line-height: var(--leading-sm);
@@ -379,23 +304,6 @@
   line-height: var(--leading-sm);
   color: var(--color-text-subtle);
 }
-
-/* ---- 원본 JSON ----------------------------------------------------------- */
-
-.raw-wrap {
-  padding: var(--space-3) var(--space-4);
-  background: var(--color-surface-muted);
-  border-radius: var(--radius-md);
-}
-
-.raw-summary {
-  font-size: var(--text-xs);
-  line-height: var(--leading-xs);
-  color: var(--color-text-subtle);
-  cursor: pointer;
-}
-
-.raw-wrap .raw { margin-top: var(--space-3); }
 
 
 /* ---- 회의록 문서 ---------------------------------------------------------- */
@@ -822,18 +730,6 @@ button.chip[aria-pressed="true"] { border-color: var(--color-accent-border); bac
   color: var(--color-accent-text);
 }
 
-/* 배지 두 종류. 색이 아니라 채우기로 가릅니다 */
-.badge--ask {
-  background: var(--color-accent-subtle);
-  border-color: var(--color-accent-border);
-  color: var(--color-accent-text);
-}
-.badge--warn {
-  background: transparent;
-  border-color: var(--color-border-strong);
-  color: var(--color-text-muted);
-}
-
 /* 삭제도 무채색입니다. 빨강은 이 화면에서 유일하게 되돌릴 수 있는 동작에
    쓰이고 있었습니다 — 「마지막 변경 되돌리기」가 바로 위에 있습니다. */
 .button--danger {
@@ -1148,4 +1044,32 @@ button.chip[aria-pressed="true"] { border-color: var(--color-accent-border); bac
   line-height: var(--leading-sm);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+/* ---- 내보내기 (섹션 5) --------------------------------------------------- */
+
+/* 문서를 끝까지 읽고 난 자리입니다. 위쪽 .actions의 작은 버튼과 같은 동작이고,
+   여기서는 "다 봤으니 꺼내 간다"가 되므로 크게 둡니다. */
+.export-bar { display: flex; gap: var(--space-3); }
+
+/* 카드 폭을 정확히 반씩 나눕니다. flex-basis가 0이라야 글자 길이와 무관하게 반입니다.
+   .button의 align-self: flex-start를 stretch로 덮습니다 — 안 덮으면 높이가 줄어듭니다.
+   높이 64px(--space-16)은 --control-height-lg(48px)보다 큰 예외입니다.
+   이 줄은 컨트롤이 아니라 화면의 마무리라서, 스크롤 끝에서 바로 눈에 띄어야 합니다. */
+.button--export {
+  flex: 1 1 0;
+  align-self: stretch;
+  height: var(--space-16);
+  padding: 0 var(--space-4);
+  background: transparent;
+  border: var(--border-thin) solid var(--color-accent-border);
+  color: var(--color-accent-text);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+}
+.button--export:hover { background: var(--color-accent-subtle); }
+
+/* 좁은 화면에서 반씩 나누면 글자가 두 줄로 접힙니다. 위아래로 세웁니다 */
+@media (max-width: 540px) {
+  .export-bar { flex-direction: column; }
 }
