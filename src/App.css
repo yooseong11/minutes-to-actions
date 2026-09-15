@@ -229,32 +229,6 @@
   word-break: break-all;
 }
 
-/* 기준 날짜 — 눈에 띄되 앞길을 막지 않습니다. 붙여넣기 전이 아니라 결과 옆에 둡니다. */
-.anchor {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
-  background: var(--color-surface-muted);
-  border-radius: var(--radius-md);
-}
-
-.anchor-label {
-  font-size: var(--text-xs);
-  line-height: var(--leading-xs);
-  color: var(--color-text-muted);
-}
-
-.anchor-input {
-  height: var(--control-height-sm);
-  padding: 0 var(--space-2);
-  background: var(--color-surface);
-  border: var(--border-thin) solid var(--color-border);
-  border-radius: var(--radius-sm);
-  font-size: var(--text-xs);
-}
-
 .button--quiet {
   height: var(--control-height-sm);
   padding: 0 var(--space-3);
@@ -315,6 +289,12 @@
 }
 
 .field-empty { color: var(--color-text-subtle); }
+
+.field-edited {
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-accent-text);
+}
 
 /* 코드가 환산한 값 옆의 원문. 원문이 없으면 환산이 틀린 걸 알아볼 수 없습니다. */
 .field-raw {
@@ -498,6 +478,39 @@
 
 .tpo { display: flex; flex-direction: column; gap: var(--space-2); }
 
+.doc-edit { flex: none; }
+
+.tpo-form {
+  padding: var(--space-4);
+  background: var(--color-surface-muted);
+  border: var(--border-thin) solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.tpo-input {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.tpo-input__control { flex: 1; }
+
+.tpo-form__note {
+  margin-left: calc(var(--space-14) + var(--space-3));
+  color: var(--color-text-subtle);
+  font-size: var(--text-xs);
+  line-height: var(--leading-sm);
+}
+
+.tpo-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.tpo-form__actions .button { align-self: auto; }
+
 /* 추출 후 편집 */
 .item-toolbar, .edit-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
 .item-toolbar { justify-content: space-between; }
@@ -521,6 +534,10 @@ button.chip[aria-pressed="true"] { border-color: var(--color-accent-border); bac
   .doc-title { flex-wrap: wrap; }
   .doc-note { margin-left: 0; }
   .field-value { min-width: 0; overflow-wrap: anywhere; }
+  .tpo-input { align-items: flex-start; flex-direction: column; gap: var(--space-1); }
+  .tpo-input .field-key { width: auto; }
+  .tpo-input__control { align-self: stretch; width: 100%; }
+  .tpo-form__note { margin-left: 0; }
 }
 
 /* 카드 조작과 담당자 정보는 색과 형태를 구분합니다. */

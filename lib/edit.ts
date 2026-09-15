@@ -3,14 +3,21 @@ import type { ProcessedItem, ProcessedMeeting } from './postprocess.js'
 import type { ItemType, RawAttendee, ReviewReason } from './types.js'
 
 export type EditableField = 'content' | 'type' | 'assignee' | 'due'
+export type EditableTpoField = 'meetingDate' | 'meetingTimeRaw' | 'meetingPlaceRaw' | 'purposeRaw'
 export interface EditableItem extends ProcessedItem {
   /** 최초 추출 결과. 사용자 수정으로 원문 근거를 덮어쓰지 않는다. */
   original?: ProcessedItem
   userCreated?: boolean
   editedFields?: EditableField[]
 }
-export interface EditableMeeting extends ProcessedMeeting { items: EditableItem[] }
+export interface EditableMeeting extends ProcessedMeeting {
+  items: EditableItem[]
+  /** 최초 추출값. 사용자가 TPO를 고쳐도 원문에서 가져온 값을 잃지 않는다. */
+  originalTpo?: Pick<ProcessedMeeting, EditableTpoField | 'meetingDateSource'>
+  editedTpoFields?: EditableTpoField[]
+}
 export type ItemPatch = Partial<Pick<ProcessedItem, EditableField>>
+export type TpoValues = Pick<ProcessedMeeting, EditableTpoField>
 const ASSIGNEE_REASONS = new Set<ReviewReason>(['no_assignee', 'assignee_unknown', 'assignee_unmatched', 'duplicate_name'])
 
 export function editItem(item: EditableItem, patch: ItemPatch): EditableItem {
@@ -53,6 +60,40 @@ export function createItem(id: string, agendaId: string, type: ItemType, content
   return editItem(item, { content, assignee, due })
 }
 
+/** TPO 네 칸을 한 번에 저장한다. 날짜가 달라진 경우에만 자동 계산 기한도 다시 계산한다. */
+export function editMeetingTpo(meeting: EditableMeeting, values: TpoValues): EditableMeeting {
+  if (values.meetingDate !== null && toEpoch(values.meetingDate) === null) {
+    throw new Error('올바른 날짜를 선택해 주세요.')
+  }
+
+  const nextValues: TpoValues = {
+    meetingDate: values.meetingDate,
+    meetingTimeRaw: blankToNull(values.meetingTimeRaw),
+    meetingPlaceRaw: blankToNull(values.meetingPlaceRaw),
+    purposeRaw: blankToNull(values.purposeRaw),
+  }
+  const changed = (Object.keys(nextValues) as EditableTpoField[])
+    .filter(field => nextValues[field] !== meeting[field])
+  if (changed.length === 0) return meeting
+
+  const withDate = changed.includes('meetingDate')
+    ? recalculateMeeting(meeting, nextValues.meetingDate)
+    : meeting
+
+  return {
+    ...withDate,
+    ...nextValues,
+    originalTpo: meeting.originalTpo ?? {
+      meetingDate: meeting.meetingDate,
+      meetingDateSource: meeting.meetingDateSource,
+      meetingTimeRaw: meeting.meetingTimeRaw,
+      meetingPlaceRaw: meeting.meetingPlaceRaw,
+      purposeRaw: meeting.purposeRaw,
+    },
+    editedTpoFields: [...new Set([...(meeting.editedTpoFields ?? []), ...changed])],
+  }
+}
+
 /** 기준일만 바꾸면 기존 발췌로 다시 계산한다. 사람이 지정하거나 지운 기한은 유지한다. */
 export function recalculateMeeting(meeting: EditableMeeting, date: string | null): EditableMeeting {
   if (date !== null && toEpoch(date) === null) throw new Error('올바른 날짜를 선택해 주세요.')
@@ -67,4 +108,9 @@ export function recalculateMeeting(meeting: EditableMeeting, date: string | null
         reviewReasons, confidence: reviewReasons.length ? 'needs_review' as const : 'high' as const }
     }),
   }
+}
+
+function blankToNull(value: string | null): string | null {
+  const trimmed = value?.trim() ?? ''
+  return trimmed || null
 }

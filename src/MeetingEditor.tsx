@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { createItem, editItem, recalculateMeeting, type EditableMeeting, type ItemPatch } from '../lib/edit.js'
+import { createItem, editItem, editMeetingTpo, type EditableMeeting, type ItemPatch } from '../lib/edit.js'
 import type { MeetingDateSource, ProcessedMeeting } from '../lib/postprocess.js'
 import ItemModal from './ItemModal.js'
 import type { ItemValues } from './ItemForm.js'
@@ -15,7 +15,6 @@ const DATE_SOURCE_LABEL: Record<MeetingDateSource, string> = {
 export default function MeetingEditor({ meeting }: { meeting: ProcessedMeeting }) {
   const [draft, setDraft] = useState<EditableMeeting>(meeting)
   const [history, setHistory] = useState<EditableMeeting[]>([])
-  const [dateInput, setDateInput] = useState(meeting.meetingDate ?? '')
   // 추가와 수정은 같은 데이터를 다루므로 하나의 모달 상태로 관리합니다.
   const [editor, setEditor] = useState<
     { mode: 'add'; agendaId: string } | { mode: 'edit'; itemId: string } | null
@@ -31,7 +30,6 @@ export default function MeetingEditor({ meeting }: { meeting: ProcessedMeeting }
     const previous = history.at(-1)
     if (!previous) return
     setDraft(previous)
-    setDateInput(previous.meetingDate ?? '')
     setHistory(history.slice(0, -1))
     setRestoreVersion(version => version + 1)
     setEditor(null)
@@ -49,31 +47,18 @@ export default function MeetingEditor({ meeting }: { meeting: ProcessedMeeting }
               <button type="button" className="button button--quiet" disabled={!history.length} onClick={undo}>마지막 변경 되돌리기</button>
               <span role="status" className="hint">{notice}</span>
             </div>
-            {/* 기한 환산은 전부 이 날짜를 기준으로 역산합니다.
-                기준이 틀리면 기한이 조용히 다 틀리므로 숨기지 않습니다. */}
-            <div className="anchor">
-              <label className="anchor-label" htmlFor="meeting-date">
-                기한 계산 기준일
-              </label>
-              <input
-                id="meeting-date"
-                className="anchor-input"
-                type="date"
-                value={dateInput}
-                onInput={(e) => setDateInput(e.currentTarget.value)}
-              />
-              <button className="button button--quiet" type="button" onClick={() => {
-                commit(recalculateMeeting(draft, dateInput || null), '기준일을 적용했어요. 직접 수정한 기한은 유지됩니다.')
-              }}>
-                다시 계산
-              </button>
-              {/* 원문 표현과 실제 기준일이 다르면 그 사실을 남깁니다 */}
-              {draft.meetingDateRaw && draft.meetingDateSource !== 'document' && (
-                <span className="hint">원문에는 “{draft.meetingDateRaw}”라고 적혀 있어요.</span>
-              )}
-            </div>
-
             <ResultDoc key={restoreVersion} meeting={draft} dateSourceLabel={DATE_SOURCE_LABEL}
+              onSaveTpo={values => {
+                const next = editMeetingTpo(draft, values)
+                if (next === draft) {
+                  setNotice('변경된 내용이 없어요.')
+                  return
+                }
+                const dateChanged = next.meetingDate !== draft.meetingDate
+                commit(next, dateChanged
+                  ? 'TPO를 수정하고 자동 계산된 기한을 다시 계산했어요.'
+                  : 'TPO를 수정했어요.')
+              }}
               onAdd={agendaId => setEditor({ mode: 'add', agendaId })}
               onEdit={itemId => setEditor({ mode: 'edit', itemId })}
               onDelete={id => commit({ ...draft, items: draft.items.filter(item => item.id !== id) }, '항목을 삭제했어요. 되돌릴 수 있습니다.')} />

@@ -1,6 +1,7 @@
+import { useState } from 'react'
 import { SECTIONS } from '../lib/labels.js'
 import type { MeetingDateSource } from '../lib/postprocess.js'
-import type { EditableItem, EditableMeeting } from '../lib/edit.js'
+import type { EditableItem, EditableMeeting, TpoValues } from '../lib/edit.js'
 import ItemCard from './ItemCard.js'
 
 /**
@@ -28,7 +29,8 @@ import ItemCard from './ItemCard.js'
  * AI가 쓴 문장이고**, 그 둘에만 "확인이 필요합니다"를 붙입니다. 나머지는 원문
  * 발췌라 코드가 원문과 대조합니다.
  *
- * TPO의 시각·장소·목적은 **원문에 있는 값을 그대로 옮긴 것**입니다.
+ * TPO의 시각·장소·목적은 처음에는 **원문에 있는 값을 그대로 옮긴 것**입니다.
+ * 사용자가 고치면 최초 추출값은 `originalTpo`에 보존하고 화면에는 수정 표시를 남깁니다.
  * 원문에 없으면 "원문에 없음"이라고 적습니다 — 비었다는 사실 자체가 정보입니다.
  */
 
@@ -38,10 +40,11 @@ const TYPE_ORDER = SECTIONS.map((s) => s.type)
 export default function ResultDoc({
   meeting,
   dateSourceLabel,
-  onEdit, onDelete, onAdd,
+  onSaveTpo, onEdit, onDelete, onAdd,
 }: {
   meeting: EditableMeeting
   dateSourceLabel: Record<MeetingDateSource, string>
+  onSaveTpo: (values: TpoValues) => void
   onEdit: (id: string) => void
   onDelete: (id: string) => void
   onAdd: (agendaId: string) => void
@@ -60,20 +63,7 @@ export default function ResultDoc({
         )}
       </Section>
 
-      <Section title="TPO" note="시각 · 장소 · 목적">
-        <dl className="tpo">
-          <div className="field">
-            <dt className="field-key">날짜</dt>
-            <dd className="field-value">
-              {meeting.meetingDate ?? <span className="field-empty">—</span>}
-              <span className="field-raw">{dateSourceLabel[meeting.meetingDateSource]}</span>
-            </dd>
-          </div>
-          <Field label="시각" value={meeting.meetingTimeRaw} />
-          <Field label="장소" value={meeting.meetingPlaceRaw} />
-          <Field label="목적" value={meeting.purposeRaw} />
-        </dl>
-      </Section>
+      <TpoSection meeting={meeting} dateSourceLabel={dateSourceLabel} onSave={onSaveTpo} />
 
       <Section title="안건" note="Done · Will Do · TBD" count={meeting.agendas.length}>
         {/* 경고가 안건보다 위에 옵니다. 읽고 난 뒤에 알려주면 늦습니다 */}
@@ -163,15 +153,110 @@ function Agenda({
   )
 }
 
+function TpoSection({ meeting, dateSourceLabel, onSave }: {
+  meeting: EditableMeeting
+  dateSourceLabel: Record<MeetingDateSource, string>
+  onSave: (values: TpoValues) => void
+}) {
+  const [editing, setEditing] = useState(false)
+  const [values, setValues] = useState(() => tpoFormValues(meeting))
+  const edited = new Set(meeting.editedTpoFields ?? [])
+
+  function startEditing() {
+    setValues(tpoFormValues(meeting))
+    setEditing(true)
+  }
+
+  return (
+    <Section title="TPO" note="시각 · 장소 · 목적" action={!editing && (
+      <button type="button" className="button button--quiet doc-edit" onClick={startEditing}>
+        수정
+      </button>
+    )}>
+      {editing ? (
+        <form className="tpo tpo-form" onSubmit={event => {
+          event.preventDefault()
+          onSave({
+            meetingDate: values.meetingDate || null,
+            meetingTimeRaw: values.meetingTimeRaw || null,
+            meetingPlaceRaw: values.meetingPlaceRaw || null,
+            purposeRaw: values.purposeRaw || null,
+          })
+          setEditing(false)
+        }}>
+          <TpoInput label="날짜" type="date" value={values.meetingDate} autoFocus
+            onChange={meetingDate => setValues(current => ({ ...current, meetingDate }))} />
+          <TpoInput label="시각" value={values.meetingTimeRaw}
+            onChange={meetingTimeRaw => setValues(current => ({ ...current, meetingTimeRaw }))} />
+          <TpoInput label="장소" value={values.meetingPlaceRaw}
+            onChange={meetingPlaceRaw => setValues(current => ({ ...current, meetingPlaceRaw }))} />
+          <TpoInput label="목적" value={values.purposeRaw}
+            onChange={purposeRaw => setValues(current => ({ ...current, purposeRaw }))} />
+          <p className="tpo-form__note">
+            날짜를 바꾸면 자동 계산된 기한도 함께 다시 계산됩니다. 직접 수정한 기한은 유지됩니다.
+          </p>
+          <div className="tpo-form__actions">
+            <button type="button" className="button button--quiet" onClick={() => setEditing(false)}>취소</button>
+            <button type="submit" className="button">저장</button>
+          </div>
+        </form>
+      ) : (
+        <dl className="tpo">
+          <div className="field">
+            <dt className="field-key">날짜</dt>
+            <dd className="field-value">
+              {meeting.meetingDate ?? <span className="field-empty">—</span>}
+              <span className="field-raw">{dateSourceLabel[meeting.meetingDateSource]}</span>
+              {edited.has('meetingDate') && <span className="field-edited">직접 수정됨</span>}
+            </dd>
+          </div>
+          <Field label="시각" value={meeting.meetingTimeRaw} edited={edited.has('meetingTimeRaw')} />
+          <Field label="장소" value={meeting.meetingPlaceRaw} edited={edited.has('meetingPlaceRaw')} />
+          <Field label="목적" value={meeting.purposeRaw} edited={edited.has('purposeRaw')} />
+        </dl>
+      )}
+    </Section>
+  )
+}
+
+type TpoFormState = Record<keyof TpoValues, string>
+
+function tpoFormValues(meeting: EditableMeeting): TpoFormState {
+  return {
+    meetingDate: meeting.meetingDate ?? '',
+    meetingTimeRaw: meeting.meetingTimeRaw ?? '',
+    meetingPlaceRaw: meeting.meetingPlaceRaw ?? '',
+    purposeRaw: meeting.purposeRaw ?? '',
+  }
+}
+
+function TpoInput({ label, value, onChange, type = 'text', autoFocus = false }: {
+  label: string
+  value: string
+  onChange: (value: string) => void
+  type?: 'text' | 'date'
+  autoFocus?: boolean
+}) {
+  return (
+    <label className="tpo-input">
+      <span className="field-key">{label}</span>
+      <input className="edit-input tpo-input__control" type={type} value={value}
+        onChange={event => onChange(event.currentTarget.value)} autoFocus={autoFocus} />
+    </label>
+  )
+}
+
 function Section({
   title,
   note,
   count,
+  action,
   children,
 }: {
   title: string
   note: string
   count?: number
+  action?: React.ReactNode
   children: React.ReactNode
 }) {
   return (
@@ -180,6 +265,7 @@ function Section({
         {title}
         {count !== undefined && <span className="doc-count">{count}</span>}
         <span className="doc-note">{note}</span>
+        {action}
       </h2>
       {children}
     </section>
@@ -187,17 +273,18 @@ function Section({
 }
 
 /**
- * 원문에서 그대로 옮긴 한 칸. 환산도 대조도 없습니다.
+ * 원문에서 그대로 옮긴 한 칸. 사용자가 고친 뒤에는 수정 표시를 함께 냅니다.
  *
  * 값이 없을 때 칸을 지우지 않고 "원문에 없음"을 남깁니다.
  * 회의록에 장소가 안 적혀 있다는 것은, 장소 칸이 화면에 없는 것과 다릅니다.
  */
-function Field({ label, value }: { label: string; value: string | null }) {
+function Field({ label, value, edited = false }: { label: string; value: string | null; edited?: boolean }) {
   return (
     <div className="field">
       <dt className="field-key">{label}</dt>
       <dd className="field-value">
         {value ?? <span className="field-empty">원문에 없음</span>}
+        {edited && <span className="field-edited">직접 수정됨</span>}
       </dd>
     </div>
   )
