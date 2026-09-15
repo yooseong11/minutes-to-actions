@@ -5,6 +5,7 @@ import ItemModal from './ItemModal.js'
 import type { ItemValues } from './ItemForm.js'
 import ResultDoc from './ResultDoc.js'
 import { toMarkdown } from '../lib/export-markdown.js'
+import { csvFileName, toCsv } from '../lib/export-csv.js'
 
 const DATE_SOURCE_LABEL: Record<MeetingDateSource, string> = {
   user: '고르신 날짜를 기준으로 계산했어요',
@@ -51,6 +52,21 @@ export default function MeetingEditor({ meeting }: { meeting: ProcessedMeeting }
       setNotice('복사하지 못했어요. 브라우저가 클립보드 접근을 막았을 수 있습니다.')
     }
   }
+  /**
+   * CSV 내려받기 (섹션 5).
+   *
+   * 마크다운은 복사지만 CSV는 파일입니다 — 엑셀이 열 대상이 클립보드가 아니라 파일입니다.
+   * objectURL은 쓰고 나서 반드시 풀어줍니다. 안 풀면 탭이 살아 있는 동안 메모리에 남습니다.
+   */
+  function downloadCsv() {
+    const url = URL.createObjectURL(new Blob([toCsv(draft)], { type: 'text/csv;charset=utf-8' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = csvFileName(draft)
+    link.click()
+    URL.revokeObjectURL(url)
+    setNotice('CSV를 내려받았어요. 엑셀에서 「분류」로 거르면 할 일만 볼 수 있습니다.')
+  }
   return (
           <section className="result">
             <p className="summary">
@@ -61,6 +77,7 @@ export default function MeetingEditor({ meeting }: { meeting: ProcessedMeeting }
             <p className="hint">수정은 이 화면에 적용됩니다. 새로고침하거나 다시 추출하면 초기화됩니다.</p>
             <div className="actions">
               <button type="button" className="button button--quiet" onClick={copyMarkdown}>마크다운 복사</button>
+              <button type="button" className="button button--quiet" onClick={downloadCsv}>CSV 내려받기</button>
               <button type="button" className="button button--quiet" disabled={!history.length} onClick={undo}>마지막 변경 되돌리기</button>
               <span role="status" className="hint">{notice}</span>
             </div>
