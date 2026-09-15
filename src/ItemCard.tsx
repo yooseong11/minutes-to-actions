@@ -47,13 +47,13 @@ export default function ItemCard({ item, onEdit, onDelete }: {
         </p>
 
         <span className="row-meta">
-          {due && <span className="row-due">{due}</span>}
           {asks.map((b) => (
             <span key={b.label} className={`row-flag row-flag--ask row-flag--${b.reason}`}>
               {b.label}
             </span>
           ))}
           {warns.map((b) => <span key={b.label} className="row-flag row-flag--warn">{b.label}</span>)}
+          {due && <span className="row-due">{due}</span>}
         </span>
 
         <span className="row-actions">
