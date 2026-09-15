@@ -227,9 +227,23 @@ function AttendeeSection({ meeting, onSave }: {
   const [editing, setEditing] = useState(false)
   const [rows, setRows] = useState<AttendeeRow[]>(() => toRows(meeting.attendees))
   const added = useRef(0)
+  const firstInput = useRef<HTMLInputElement>(null)
+  /** 더블클릭으로 들어왔을 때 커서를 받을 칸. 버튼으로 들어오면 첫 사람입니다 */
+  const focusTarget = useRef<HTMLInputElement | null>(null)
   const formRef = useCancelOnOutside(editing, useCallback(() => setEditing(false), []))
 
   const shown = editing ? rows : toRows(meeting.attendees)
+
+  useEffect(() => {
+    if (editing) (focusTarget.current ?? firstInput.current)?.focus()
+  }, [editing])
+
+  /** 더블클릭한 칸으로 커서를 보냅니다. 칩이 여럿이라 첫 칸 고정은 더 불편합니다 */
+  function startEditing(target?: HTMLInputElement) {
+    focusTarget.current = target ?? null
+    setRows(toRows(meeting.attendees))
+    setEditing(true)
+  }
 
   function patch(uid: string, key: 'nameRaw' | 'contextRaw', value: string) {
     setRows(current => current.map(row => row.uid === uid ? { ...row, [key]: value } : row))
@@ -251,19 +265,17 @@ function AttendeeSection({ meeting, onSave }: {
         }}
         onKeyDown={event => { if (editing && event.key === 'Escape') setEditing(false) }}
       >
-        <EditBar editing={editing} onStart={() => {
-          setRows(toRows(meeting.attendees))
-          setEditing(true)
-        }} />
+        <EditBar editing={editing} onStart={() => startEditing()} />
 
         {shown.length === 0 && (
           <p className="doc-empty">본문에서 참석자를 찾지 못했습니다.</p>
         )}
 
         <ul className="people">
-          {shown.map(row => (
+          {shown.map((row, index) => (
             <li className={editing ? 'person person--editing' : 'person'} key={row.uid}>
               <input
+                ref={index === 0 ? firstInput : undefined}
                 className="person__name"
                 value={row.nameRaw}
                 readOnly={!editing}
@@ -271,7 +283,9 @@ function AttendeeSection({ meeting, onSave }: {
                 required
                 size={Math.max(row.nameRaw.length, 3)}
                 aria-label="참석자 이름"
+                title={editing ? undefined : '두 번 누르면 고칠 수 있어요'}
                 onChange={event => patch(row.uid, 'nameRaw', event.currentTarget.value)}
+                onDoubleClick={event => { if (!editing) startEditing(event.currentTarget) }}
               />
               {/* 소속이 비어 있고 읽기 모드면 안 보입니다. 자리는 그대로 둡니다 */}
               <span className={!editing && !row.contextRaw ? 'person__context person__context--idle' : 'person__context'}>
@@ -284,7 +298,9 @@ function AttendeeSection({ meeting, onSave }: {
                   placeholder="소속"
                   size={Math.max((row.contextRaw ?? '').length, 2)}
                   aria-label="소속"
+                  title={editing ? undefined : '두 번 누르면 고칠 수 있어요'}
                   onChange={event => patch(row.uid, 'contextRaw', event.currentTarget.value)}
+                  onDoubleClick={event => { if (!editing) startEditing(event.currentTarget) }}
                 />
                 <span aria-hidden="true">)</span>
               </span>
@@ -348,10 +364,26 @@ function TpoSection({ meeting, dateSourceLabel, onSave }: {
   const [values, setValues] = useState(() => tpoFormValues(meeting))
   const edited = new Set(meeting.editedTpoFields ?? [])
   const firstInput = useRef<HTMLInputElement>(null)
+  /** 더블클릭으로 들어왔을 때 커서를 받을 칸. 버튼으로 들어오면 비어 있습니다 */
+  const focusTarget = useRef<HTMLInputElement | null>(null)
   const formRef = useCancelOnOutside(editing, useCallback(() => setEditing(false), []))
 
   // input이 항상 떠 있으므로 autoFocus가 다시 걸리지 않습니다. 직접 옮깁니다.
-  useEffect(() => { if (editing) firstInput.current?.focus() }, [editing])
+  useEffect(() => {
+    if (editing) (focusTarget.current ?? firstInput.current)?.focus()
+  }, [editing])
+
+  /*
+   * 더블클릭한 칸으로 커서를 보냅니다. 무조건 첫 칸(날짜)으로 보내면
+   * 「장소」를 두 번 눌렀는데 커서가 날짜에 가 있는 일이 생깁니다.
+   * input은 읽기 모드에도 같은 노드로 떠 있으므로, 여기서 잡아둔 노드가
+   * 수정 모드에서도 그대로 유효합니다.
+   */
+  function startEditing(target?: HTMLInputElement) {
+    focusTarget.current = target ?? null
+    setValues(tpoFormValues(meeting))
+    setEditing(true)
+  }
 
   // 읽기 모드에는 저장된 값을, 수정 모드에는 편집 중인 값을 냅니다.
   const shown = editing ? values : tpoFormValues(meeting)
@@ -377,21 +409,18 @@ function TpoSection({ meeting, dateSourceLabel, onSave }: {
         }}
         onKeyDown={event => { if (editing && event.key === 'Escape') setEditing(false) }}
       >
-        <EditBar editing={editing} onStart={() => {
-          setValues(tpoFormValues(meeting))
-          setEditing(true)
-        }} />
+        <EditBar editing={editing} onStart={() => startEditing()} />
 
-        <TpoRow label="날짜" type="date" editing={editing} inputRef={firstInput}
+        <TpoRow label="날짜" type="date" editing={editing} inputRef={firstInput} onStartEdit={startEditing}
           value={shown.meetingDate} onChange={change('meetingDate')}
           raw={dateSourceLabel[meeting.meetingDateSource]} edited={edited.has('meetingDate')} />
-        <TpoRow label="시각" editing={editing}
+        <TpoRow label="시각" editing={editing} onStartEdit={startEditing}
           value={shown.meetingTimeRaw} onChange={change('meetingTimeRaw')}
           edited={edited.has('meetingTimeRaw')} />
-        <TpoRow label="장소" editing={editing}
+        <TpoRow label="장소" editing={editing} onStartEdit={startEditing}
           value={shown.meetingPlaceRaw} onChange={change('meetingPlaceRaw')}
           edited={edited.has('meetingPlaceRaw')} />
-        <TpoRow label="목적" editing={editing}
+        <TpoRow label="목적" editing={editing} onStartEdit={startEditing}
           value={shown.purposeRaw} onChange={change('purposeRaw')}
           edited={edited.has('purposeRaw')} />
         {/* 읽기 모드에서도 자리는 차지합니다 — 생겼다 사라지면 아래가 밀립니다 */}
@@ -425,7 +454,7 @@ function tpoFormValues(meeting: EditableMeeting): TpoFormState {
  * 읽기 모드에서는 `tabIndex={-1}`로 탭 순서에서 뺍니다. 포커스 테두리를 지웠기
  * 때문에, 탭이 여기 멈추면 사용자는 자기가 어디에 있는지 알 수 없게 됩니다.
  */
-function TpoRow({ label, value, onChange, editing, type = 'text', raw, edited = false, inputRef }: {
+function TpoRow({ label, value, onChange, editing, type = 'text', raw, edited = false, inputRef, onStartEdit }: {
   label: string
   value: string
   onChange: (value: string) => void
@@ -434,6 +463,7 @@ function TpoRow({ label, value, onChange, editing, type = 'text', raw, edited = 
   raw?: string
   edited?: boolean
   inputRef?: React.Ref<HTMLInputElement>
+  onStartEdit: (target: HTMLInputElement) => void
 }) {
   return (
     <label className={editing ? 'field tpo-row tpo-row--editing' : 'field tpo-row'}>
@@ -447,7 +477,9 @@ function TpoRow({ label, value, onChange, editing, type = 'text', raw, edited = 
           readOnly={!editing}
           tabIndex={editing ? 0 : -1}
           placeholder="원문에 없음"
+          title={editing ? undefined : '두 번 누르면 고칠 수 있어요'}
           onChange={event => onChange(event.currentTarget.value)}
+          onDoubleClick={event => { if (!editing) onStartEdit(event.currentTarget) }}
         />
         {raw && <span className="field-raw">{raw}</span>}
         {edited && <span className="field-edited">직접 수정됨</span>}
