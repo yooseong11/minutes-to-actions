@@ -649,6 +649,41 @@ button.chip[aria-pressed="true"] { border-color: var(--color-accent-border); bac
   padding: var(--space-2) var(--space-1);
 }
 
+/* 결정·할 일·미결은 항목의 성격을 처음 읽는 표식이라 작은 텍스트로 두지 않습니다. */
+.type-tag {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3.5rem;
+  min-height: var(--space-6);
+  padding: var(--space-1) var(--space-3);
+  border: var(--border-thin) solid;
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+}
+
+.type-tag--decision {
+  background: var(--color-text);
+  border-color: var(--color-text);
+  color: var(--color-text-inverse);
+}
+
+.type-tag--action {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.type-tag--open {
+  background: var(--color-accent-subtle);
+  border-color: var(--color-accent-border);
+  color: var(--color-accent-text);
+}
+
 /* 사람이 채워야 하는 줄 — **줄 자체에는 아무 표시도 하지 않습니다.**
  *
  * 처음엔 배경을 깔았고(6줄 중 4줄이 초록이 됐습니다), 다음엔 왼쪽 막대로
@@ -678,6 +713,7 @@ button.chip[aria-pressed="true"] { border-color: var(--color-accent-border); bac
   flex: 0 0 auto;
   display: flex;
   align-items: baseline;
+  flex-wrap: wrap;
   gap: var(--space-2);
   font-size: var(--text-xs);
   line-height: var(--leading-xs);
@@ -686,9 +722,33 @@ button.chip[aria-pressed="true"] { border-color: var(--color-accent-border); bac
 
 .row-due { font-variant-numeric: tabular-nums; white-space: nowrap; }
 
-/* 사유는 상자 없는 글씨입니다. 배지를 달면 줄이 다시 카드가 됩니다 */
-.row-flag { white-space: nowrap; }
-.row-flag--ask { color: var(--color-accent-text); font-weight: var(--weight-medium); }
+/* 검토 사유는 내용과 섞이지 않도록 작은 뱃지로 구분합니다. */
+.row-flag {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--space-6);
+  padding: var(--space-1) var(--space-2);
+  border: var(--border-thin) solid var(--color-border-strong);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+}
+
+.row-flag--ask {
+  background: var(--color-accent-subtle);
+  border-color: var(--color-accent-border);
+  color: var(--color-accent-text);
+}
+
+/* 불확실하거나 조건을 확인해야 하는 사유는 노란색으로 분리합니다. */
+.row-flag--warn,
+.row-flag--unit_unclear {
+  background: var(--color-warn-bg);
+  border-color: var(--color-warn-border);
+  color: var(--color-warn-text);
+}
 
 /* 항상 보이되 조용합니다. hover로만 띄우면 터치 화면에서 못 찾습니다 */
 .row-actions { flex: 0 0 auto; display: flex; gap: var(--space-1); align-self: center; }
@@ -738,14 +798,26 @@ button.chip[aria-pressed="true"] { border-color: var(--color-accent-border); bac
   overflow-wrap: anywhere;
 }
 
-.button--add { align-self: flex-start; height: var(--control-height-sm); }
+.button--add {
+  align-self: stretch;
+  width: 100%;
+  min-height: var(--control-height-md);
+  justify-content: center;
+  border-style: dashed;
+}
 
 /* 좁은 화면에서는 기한·사유를 아래 줄로 내립니다. 옆에 두면 내용이 두 글자씩 끊깁니다 */
 @media (max-width: 540px) {
   .agenda { padding: var(--space-3); }
-  .row-line { flex-wrap: wrap; row-gap: var(--space-1); }
+  .row-line { align-items: center; flex-wrap: wrap; row-gap: var(--space-1); }
+  .type-tag, .row-actions { align-self: center; }
   .row-text { flex-basis: 100%; order: 2; }
-  .row-meta { order: 3; margin-left: calc(3.4rem + var(--space-3)); }
+  .row-meta {
+    order: 3;
+    width: 100%;
+    justify-content: flex-end;
+    margin-left: auto;
+  }
   .row-actions { margin-left: auto; }
   .icon-button { width: var(--control-height-sm); height: var(--control-height-sm); }
   .row-detail { padding-left: var(--space-1); }

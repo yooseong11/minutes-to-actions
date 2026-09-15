@@ -46,7 +46,9 @@ export default function ItemCard({ item, attendees, onEdit, onDelete }: {
     )
   }
 
-  const labels = item.reviewReasons.map((r) => REVIEW_REASON[r]).filter((r) => r !== undefined)
+  const labels = item.reviewReasons
+    .map((reason) => ({ ...REVIEW_REASON[reason], reason }))
+    .filter((r) => r.label !== undefined)
   const asks = labels.filter((r) => r.kind === 'ask')
   const warns = labels.filter((r) => r.kind === 'warn')
   const struck = item.reviewReasons.includes('superseded')
@@ -65,8 +67,12 @@ export default function ItemCard({ item, attendees, onEdit, onDelete }: {
 
         <span className="row-meta">
           {due && <span className="row-due">{due}</span>}
-          {asks.map((b) => <span key={b.label} className="row-flag row-flag--ask">{b.label}</span>)}
-          {warns.map((b) => <span key={b.label} className="row-flag">{b.label}</span>)}
+          {asks.map((b) => (
+            <span key={b.label} className={`row-flag row-flag--ask row-flag--${b.reason}`}>
+              {b.label}
+            </span>
+          ))}
+          {warns.map((b) => <span key={b.label} className="row-flag row-flag--warn">{b.label}</span>)}
         </span>
 
         <span className="row-actions">
