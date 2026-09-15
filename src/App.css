@@ -478,38 +478,103 @@
 
 .tpo { display: flex; flex-direction: column; gap: var(--space-2); }
 
-.doc-edit { flex: none; }
-
-.tpo-form {
-  padding: var(--space-4);
-  background: var(--color-surface-muted);
-  border: var(--border-thin) solid var(--color-border);
-  border-radius: var(--radius-lg);
-}
-
-.tpo-input {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.tpo-input__control { flex: 1; }
-
-.tpo-form__note {
-  margin-left: calc(var(--space-14) + var(--space-3));
-  color: var(--color-text-subtle);
-  font-size: var(--text-xs);
-  line-height: var(--leading-sm);
-}
-
-.tpo-form__actions {
+/*
+ * 버튼 줄. 제목 아래·첫 칸 위에 오른쪽 정렬로 섭니다.
+ * 읽기 모드는 「수정」 하나, 수정 모드는 「취소·저장」 둘인데 높이(32px)가
+ * 같아서 아래 칸이 밀리지 않고, 오른쪽 끝에 붙어 있어 가로로도 안 움직입니다.
+ */
+.tpo-bar {
+  /*
+   * 제목(.doc-title)이 sticky라, 스크롤하면 이 줄이 그 밑으로 파고들어
+   * 버튼이 제목에 덮입니다 — 눌러도 제목이 클릭을 먹습니다.
+   * 그래서 이 줄도 제목 바로 아래에 붙여둡니다. top 값은 제목의 높이
+   * (위 여백 + 글줄 + 아래 여백 + 테두리)를 토큰으로 더한 것입니다.
+   * sticky는 흐름에서 자리를 빼지 않으므로 레이아웃은 그대로입니다.
+   */
+  position: sticky;
+  top: calc(var(--space-3) + var(--leading-lg) + var(--space-2) + var(--border-thin));
+  z-index: var(--z-sticky);
   display: flex;
   justify-content: flex-end;
   gap: var(--space-2);
-  margin-top: var(--space-2);
+  padding-bottom: var(--space-1);
+  background: var(--color-bg);
 }
 
-.tpo-form__actions .button { align-self: auto; }
+/* 저장은 기본 동작이라 눈에 띄어야 하지만, 크기는 취소와 같아야 합니다 */
+.button--quiet.button--strong {
+  background: var(--color-accent-subtle);
+  font-weight: var(--weight-semibold);
+}
+
+/*
+ * 읽기 모드와 수정 모드가 **같은 요소**를 씁니다. 자세한 이유는 ResultDoc.tsx
+ * 의 TpoSection 주석에 있습니다. 여기서 지켜야 하는 것은 하나입니다 —
+ * 모드가 바뀔 때 바뀌는 CSS 속성은 **색뿐이어야 합니다.**
+ * 여백·테두리 두께·글자 크기·줄 높이는 두 모드가 같은 값을 씁니다.
+ */
+.tpo-row__value { flex: 1; min-width: 0; }
+
+.tpo-row__control {
+  box-sizing: border-box;
+  /*
+   * 높이를 못 박습니다. type=date 와 type=text 는 내부 구조가 달라 내용 높이가
+   * 2px 어긋나는데, 날짜칸 하나가 2px 자라면 아래 세 줄이 통째로 밀립니다.
+   */
+  height: calc(var(--leading-sm) + 2 * var(--border-thin));
+  /* 상자가 글자를 감쌉니다 — 줄 전체를 채우는 띠가 아니라 "텍스트에 박스만" */
+  field-sizing: content;
+  flex: 0 1 auto;
+  min-width: var(--space-20);
+  max-width: 100%;
+  /* 읽기 모드에도 1px을 잡아둡니다. 수정 모드에서 색만 들어옵니다 */
+  border: var(--border-thin) solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 0 var(--space-2);
+  /* 테두리와 좌우 여백만큼 당겨, 읽기 모드 글자가 다른 칸과 같은 선에서 시작합니다 */
+  margin-left: calc(-1 * (var(--space-2) + var(--border-thin)));
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+/* field-sizing 이 없는 브라우저(현재 Safari·Firefox)는 예전처럼 줄을 채웁니다 */
+@supports not (field-sizing: content) {
+  .tpo-row__control { flex: 1; }
+}
+
+/*
+ * 날짜칸만 폭을 못 박습니다. 수정 모드에서 type=date 로 바뀌며 표기가
+ * "2026-09-08" → "2026. 09. 08." + 달력 아이콘으로 넓어지는데,
+ * 내용에 맞춰 늘리면 옆의 기준일 설명이 가로로 밀립니다.
+ */
+.tpo-row__control--date {
+  field-sizing: auto;
+  flex: none;
+  width: calc(var(--space-24) + var(--space-20));
+}
+
+/* 읽기 모드: 입력칸으로 보이지 않아야 합니다 */
+.tpo-row__control:read-only { cursor: default; }
+.tpo-row__control::placeholder { color: var(--color-text-subtle); }
+
+/* 수정 모드: 달라지는 것은 테두리 색과 바탕색뿐입니다 */
+.tpo-row--editing .tpo-row__control {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+}
+
+.tpo-note {
+  margin-left: calc(var(--space-14) + var(--space-3));
+  color: var(--color-text-subtle);
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+}
+
+.tpo-note--idle { visibility: hidden; }
 
 /* 추출 후 편집 */
 .item-toolbar, .edit-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
@@ -534,10 +599,11 @@ button.chip[aria-pressed="true"] { border-color: var(--color-accent-border); bac
   .doc-title { flex-wrap: wrap; }
   .doc-note { margin-left: 0; }
   .field-value { min-width: 0; overflow-wrap: anywhere; }
-  .tpo-input { align-items: flex-start; flex-direction: column; gap: var(--space-1); }
-  .tpo-input .field-key { width: auto; }
-  .tpo-input__control { align-self: stretch; width: 100%; }
-  .tpo-form__note { margin-left: 0; }
+  .tpo-row { align-items: flex-start; flex-direction: column; gap: var(--space-1); }
+  .tpo-row .field-key { width: auto; }
+  .tpo-row__value { align-self: stretch; width: 100%; }
+  /* 라벨이 위로 올라가므로, 상자를 당겨 글자를 라벨과 같은 선에 둡니다 */
+  .tpo-note { margin-left: 0; }
 }
 
 /* 카드 조작과 담당자 정보는 색과 형태를 구분합니다. */
