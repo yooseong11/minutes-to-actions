@@ -5,6 +5,8 @@ import MeetingEditor from './MeetingEditor.js'
 import { useExtract } from './useExtract.js'
 import './App.css'
 
+const MAX_TEXT_LENGTH = 700
+
 /**
  * 섹션 3 — 붙여넣기 → 추출 → 결과.
  *
@@ -46,20 +48,26 @@ export default function App() {
   return (
     <div className="page">
       <header className="header">
-        <h1 className="title">회의록 추출기</h1>
-        <p className="subtitle">회의록을 붙여넣으면 결정·액션아이템으로 나눕니다.</p>
+        <h1 className="title">AI 회의록 요약 추출기</h1>
       </header>
 
       <main className="main">
-        <label className="label" htmlFor="minutes">회의록 원문</label>
-        <textarea
-          id="minutes"
-          className="input"
-          placeholder="여기에 붙여넣으세요"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          disabled={loading}
-        />
+        <label className="label" htmlFor="minutes">현재 비용 문제로 700자까지만 요약을 지원합니다.</label>
+        <div className="input-group">
+          <textarea
+            id="minutes"
+            className="input"
+            placeholder="여기에 붙여넣으세요"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            maxLength={MAX_TEXT_LENGTH}
+            aria-describedby="minutes-count"
+            disabled={loading}
+          />
+          <output id="minutes-count" className="character-count" htmlFor="minutes">
+            {text.length} / {MAX_TEXT_LENGTH}자
+          </output>
+        </div>
 
         <div className="actions">
           <button
@@ -74,7 +82,7 @@ export default function App() {
             {loading && <span className="spinner" aria-hidden="true" />}
             {loading ? '추출하는 중…' : '추출하기'}
           </button>
-          {loading && <span className="hint">최대 45초 걸릴 수 있어요.</span>}
+          {loading && <span className="hint">최대 55초 걸릴 수 있어요.</span>}
 
           {/* 개발 중에만 보입니다. 프로덕션 빌드에서는 통째로 사라집니다.
               추출 버튼은 누를 때마다 OpenAI 토큰이 나갑니다. 화면만 고칠 때는 이쪽입니다. */}
