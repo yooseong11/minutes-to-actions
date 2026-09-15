@@ -4,6 +4,7 @@ import type { MeetingDateSource, ProcessedMeeting } from '../lib/postprocess.js'
 import ItemModal from './ItemModal.js'
 import type { ItemValues } from './ItemForm.js'
 import ResultDoc from './ResultDoc.js'
+import { toMarkdown } from '../lib/export-markdown.js'
 
 const DATE_SOURCE_LABEL: Record<MeetingDateSource, string> = {
   user: '고르신 날짜를 기준으로 계산했어요',
@@ -35,6 +36,21 @@ export default function MeetingEditor({ meeting }: { meeting: ProcessedMeeting }
     setEditor(null)
     setNotice('마지막 변경을 되돌렸어요.')
   }
+  /**
+   * 마크다운 복사 (섹션 5).
+   *
+   * 편집이 아니므로 history에 쌓지 않습니다 — 되돌릴 게 없습니다.
+   * `toMarkdown`은 `draft`를 받습니다. 화면에 보이는 값 그대로가 나가야 합니다.
+   */
+  async function copyMarkdown() {
+    try {
+      await navigator.clipboard.writeText(toMarkdown(draft))
+      setNotice('마크다운을 복사했어요. 노션에 붙여넣으면 됩니다.')
+    } catch {
+      // 클립보드는 보안 컨텍스트(https·localhost)에서만 동작합니다. 조용히 실패하지 않습니다.
+      setNotice('복사하지 못했어요. 브라우저가 클립보드 접근을 막았을 수 있습니다.')
+    }
+  }
   return (
           <section className="result">
             <p className="summary">
@@ -44,6 +60,7 @@ export default function MeetingEditor({ meeting }: { meeting: ProcessedMeeting }
 
             <p className="hint">수정은 이 화면에 적용됩니다. 새로고침하거나 다시 추출하면 초기화됩니다.</p>
             <div className="actions">
+              <button type="button" className="button button--quiet" onClick={copyMarkdown}>마크다운 복사</button>
               <button type="button" className="button button--quiet" disabled={!history.length} onClick={undo}>마지막 변경 되돌리기</button>
               <span role="status" className="hint">{notice}</span>
             </div>
