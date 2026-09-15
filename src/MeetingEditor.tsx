@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { createItem, editItem, recalculateMeeting, type EditableMeeting } from '../lib/edit.js'
+import { createItem, editItem, recalculateMeeting, type EditableMeeting, type ItemPatch } from '../lib/edit.js'
 import type { MeetingDateSource, ProcessedMeeting } from '../lib/postprocess.js'
-import ItemForm from './ItemForm.js'
+import ItemModal from './ItemModal.js'
+import type { ItemValues } from './ItemForm.js'
 import ResultDoc from './ResultDoc.js'
 
 const DATE_SOURCE_LABEL: Record<MeetingDateSource, string> = {
@@ -15,8 +16,10 @@ export default function MeetingEditor({ meeting }: { meeting: ProcessedMeeting }
   const [draft, setDraft] = useState<EditableMeeting>(meeting)
   const [history, setHistory] = useState<EditableMeeting[]>([])
   const [dateInput, setDateInput] = useState(meeting.meetingDate ?? '')
-  // 어느 안건에 추가할지. 항목은 반드시 안건 안에 들어가므로 id를 들고 있습니다
-  const [adding, setAdding] = useState<string | null>(null)
+  // 추가와 수정은 같은 데이터를 다루므로 하나의 모달 상태로 관리합니다.
+  const [editor, setEditor] = useState<
+    { mode: 'add'; agendaId: string } | { mode: 'edit'; itemId: string } | null
+  >(null)
   const [notice, setNotice] = useState('')
   const [restoreVersion, setRestoreVersion] = useState(0)
   function commit(next: EditableMeeting, message: string) {
@@ -31,7 +34,7 @@ export default function MeetingEditor({ meeting }: { meeting: ProcessedMeeting }
     setDateInput(previous.meetingDate ?? '')
     setHistory(history.slice(0, -1))
     setRestoreVersion(version => version + 1)
-    setAdding(null)
+    setEditor(null)
     setNotice('마지막 변경을 되돌렸어요.')
   }
   return (
@@ -46,18 +49,6 @@ export default function MeetingEditor({ meeting }: { meeting: ProcessedMeeting }
               <button type="button" className="button button--quiet" disabled={!history.length} onClick={undo}>마지막 변경 되돌리기</button>
               <span role="status" className="hint">{notice}</span>
             </div>
-            {adding && <div className="item">
-              <h2 className="item-content">
-                새 항목
-                <span className="hint"> · {draft.agendas.find(a => a.id === adding)?.title ?? '안건 없음'}</span>
-              </h2>
-              <ItemForm key={adding} adding attendees={draft.attendees}
-                initial={{ type: 'action', content: '', assignee: null, due: null }} onCancel={() => setAdding(null)}
-                onSave={values => {
-                  commit({ ...draft, items: [...draft.items, createItem(crypto.randomUUID(), adding, values.type, values.content, values.assignee, values.due)] }, '항목을 추가했어요.')
-                  setAdding(null)
-                }} />
-            </div>}
             {/* 기한 환산은 전부 이 날짜를 기준으로 역산합니다.
                 기준이 틀리면 기한이 조용히 다 틀리므로 숨기지 않습니다. */}
             <div className="anchor">
@@ -82,12 +73,46 @@ export default function MeetingEditor({ meeting }: { meeting: ProcessedMeeting }
               )}
             </div>
 
-            <ResultDoc key={restoreVersion} meeting={draft} dateSourceLabel={DATE_SOURCE_LABEL} onAdd={setAdding}
-              onEdit={(id, patch) => {
-                if (!Object.keys(patch).length) return
-                commit({ ...draft, items: draft.items.map(item => item.id === id ? editItem(item, patch) : item) }, '수정을 적용했어요.')
-              }}
+            <ResultDoc key={restoreVersion} meeting={draft} dateSourceLabel={DATE_SOURCE_LABEL}
+              onAdd={agendaId => setEditor({ mode: 'add', agendaId })}
+              onEdit={itemId => setEditor({ mode: 'edit', itemId })}
               onDelete={id => commit({ ...draft, items: draft.items.filter(item => item.id !== id) }, '항목을 삭제했어요. 되돌릴 수 있습니다.')} />
+
+            {editor && (() => {
+              const item = editor.mode === 'edit' ? draft.items.find(i => i.id === editor.itemId) : undefined
+              const agendaId = editor.mode === 'add' ? editor.agendaId : item?.agendaId
+              const agendaTitle = draft.agendas.find(agenda => agenda.id === agendaId)?.title ?? '안건 없음'
+              if (editor.mode === 'edit' && !item) return null
+              const initial: ItemValues = item ?? { type: 'action', content: '', assignee: null, due: null }
+
+              return (
+                <ItemModal
+                  key={editor.mode === 'add' ? `add:${editor.agendaId}` : `edit:${editor.itemId}`}
+                  mode={editor.mode}
+                  agendaTitle={agendaTitle}
+                  initial={initial}
+                  attendees={draft.attendees}
+                  onClose={() => setEditor(null)}
+                  onSave={values => {
+                    if (editor.mode === 'add') {
+                      commit({
+                        ...draft,
+                        items: [...draft.items, createItem(crypto.randomUUID(), editor.agendaId, values.type, values.content, values.assignee, values.due)],
+                      }, '항목을 추가했어요.')
+                    } else if (item) {
+                      const patch = toItemPatch(item, values)
+                      if (Object.keys(patch).length) {
+                        commit({
+                          ...draft,
+                          items: draft.items.map(current => current.id === item.id ? editItem(current, patch) : current),
+                        }, '수정을 적용했어요.')
+                      }
+                    }
+                    setEditor(null)
+                  }}
+                />
+              )
+            })()}
 
             <details className="excluded">
               <summary className="excluded-summary">
@@ -115,4 +140,13 @@ export default function MeetingEditor({ meeting }: { meeting: ProcessedMeeting }
             </details>
           </section>
   )
+}
+
+function toItemPatch(item: EditableMeeting['items'][number], values: ItemValues): ItemPatch {
+  const patch: ItemPatch = {}
+  if (values.content !== item.content) patch.content = values.content
+  if (values.type !== item.type) patch.type = values.type
+  if (JSON.stringify(values.assignee) !== JSON.stringify(item.assignee)) patch.assignee = values.assignee
+  if (values.clearedFields?.includes('due') || values.due !== item.due) patch.due = values.due
+  return patch
 }

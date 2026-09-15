@@ -1,7 +1,5 @@
 import { useState } from 'react'
-import type { EditableItem, ItemPatch } from '../lib/edit.js'
-import type { RawAttendee } from '../lib/types.js'
-import ItemForm from './ItemForm.js'
+import type { EditableItem } from '../lib/edit.js'
 import { ITEM_TYPE, REVIEW_REASON } from '../lib/labels.js'
 
 /**
@@ -24,27 +22,10 @@ import { ITEM_TYPE, REVIEW_REASON } from '../lib/labels.js'
  * 환산이 틀렸을 때 원문이 없으면 틀린 걸 알아볼 방법이 없습니다.
  * 다만 상시 노출하지 않고 「근거」를 눌러 펼칩니다 — 대부분 content와 같은 문장입니다.
  */
-export default function ItemCard({ item, attendees, onEdit, onDelete }: {
-  item: EditableItem; attendees: RawAttendee[]; onEdit: (patch: ItemPatch) => void; onDelete: () => void
+export default function ItemCard({ item, onEdit, onDelete }: {
+  item: EditableItem; onEdit: () => void; onDelete: () => void
 }) {
-  const [editing, setEditing] = useState(false)
   const [open, setOpen] = useState(false)
-
-  if (editing) {
-    return (
-      <li className="row row--editing">
-        <ItemForm initial={item} attendees={attendees} onCancel={() => setEditing(false)} onSave={values => {
-          const patch: ItemPatch = {}
-          if (values.content !== item.content) patch.content = values.content
-          if (values.type !== item.type) patch.type = values.type
-          if (values.clearedFields?.includes('assignee') || JSON.stringify(values.assignee) !== JSON.stringify(item.assignee)) patch.assignee = values.assignee
-          if (values.clearedFields?.includes('due') || values.due !== item.due) patch.due = values.due
-          onEdit(patch)
-          setEditing(false)
-        }} />
-      </li>
-    )
-  }
 
   const labels = item.reviewReasons
     .map((reason) => ({ ...REVIEW_REASON[reason], reason }))
@@ -84,7 +65,7 @@ export default function ItemCard({ item, attendees, onEdit, onDelete }: {
             </button>
           )}
           <button type="button" className="icon-button" aria-label="수정" title="수정"
-            onClick={() => setEditing(true)}>
+            onClick={onEdit}>
             <Icon path="M9.5 2.5 11.5 4.5 5 11H3V9zM8.2 3.8l2 2" />
           </button>
           <button type="button" className="icon-button icon-button--danger" aria-label="삭제" title="삭제"

@@ -1,6 +1,6 @@
 import { SECTIONS } from '../lib/labels.js'
 import type { MeetingDateSource } from '../lib/postprocess.js'
-import type { EditableItem, EditableMeeting, ItemPatch } from '../lib/edit.js'
+import type { EditableItem, EditableMeeting } from '../lib/edit.js'
 import ItemCard from './ItemCard.js'
 
 /**
@@ -42,7 +42,7 @@ export default function ResultDoc({
 }: {
   meeting: EditableMeeting
   dateSourceLabel: Record<MeetingDateSource, string>
-  onEdit: (id: string, patch: ItemPatch) => void
+  onEdit: (id: string) => void
   onDelete: (id: string) => void
   onAdd: (agendaId: string) => void
 }) {
@@ -94,7 +94,6 @@ export default function ResultDoc({
                 title={agenda.title}
                 summary={agenda.summary}
                 items={sortByType(meeting.items.filter((i) => i.agendaId === agenda.id))}
-                attendees={meeting.attendees}
                 onEdit={onEdit}
                 onDelete={onDelete}
                 onAdd={() => onAdd(agenda.id)}
@@ -119,13 +118,12 @@ function sortByType(items: EditableItem[]): EditableItem[] {
  * 항목이 전부 환각으로 걸러졌다면, 그 사실이 화면에 남아야 합니다.
  */
 function Agenda({
-  title, summary, items, attendees, onEdit, onDelete, onAdd,
+  title, summary, items, onEdit, onDelete, onAdd,
 }: {
   title: string
   summary: string | null
   items: EditableItem[]
-  attendees: EditableMeeting['attendees']
-  onEdit: (id: string, patch: ItemPatch) => void
+  onEdit: (id: string) => void
   onDelete: (id: string) => void
   onAdd: () => void
 }) {
@@ -151,8 +149,7 @@ function Agenda({
             <ItemCard
               key={i.id}
               item={i}
-              attendees={attendees}
-              onEdit={(patch) => onEdit(i.id, patch)}
+              onEdit={() => onEdit(i.id)}
               onDelete={() => onDelete(i.id)}
             />
           ))}

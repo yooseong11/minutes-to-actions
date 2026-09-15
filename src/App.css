@@ -502,12 +502,17 @@
 .item-toolbar, .edit-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
 .item-toolbar { justify-content: space-between; }
 .item-form { display: flex; flex-direction: column; gap: var(--space-3); font-size: var(--text-sm); }
+.button--form-submit { align-self: stretch; width: 100%; }
 .edit-input { min-width: 0; max-width: 100%; padding: var(--space-3); border: var(--border-thin) solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text); font: inherit; }
 .edit-content { min-height: 100px; resize: vertical; }
-.edit-assignee { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-3); border: var(--border-thin) solid var(--color-border); border-radius: var(--radius-md); min-width: 0; }
-.edit-assignee legend { padding: 0 var(--space-2); }
-.edit-field { display: flex; flex: 1 1 140px; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.edit-assignee { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; padding: 0; border: 0; }
+.edit-assignee legend { padding: 0 0 var(--space-2); }
 button.chip { cursor: pointer; height: auto; min-height: var(--control-height-sm); }
+button.chip:hover {
+  border-color: var(--color-accent-border);
+  background: var(--color-accent-subtle);
+  color: var(--color-accent-text);
+}
 button.chip[aria-pressed="true"] { border-color: var(--color-accent-border); background: var(--color-accent-subtle); color: var(--color-accent-text); }
 .item-content { white-space: pre-wrap; overflow-wrap: anywhere; }
 .actions { flex-wrap: wrap; }
@@ -519,12 +524,6 @@ button.chip[aria-pressed="true"] { border-color: var(--color-accent-border); bac
 }
 
 /* 카드 조작과 담당자 정보는 색과 형태를 구분합니다. */
-.button--edit {
-  color: var(--color-text);
-  background: var(--color-surface);
-  border-color: var(--color-border-strong);
-}
-.button--edit:hover, .button--edit:active { background: var(--color-surface-muted); }
 .button--danger {
   color: var(--color-danger-text);
   background: var(--color-danger-bg);
@@ -817,6 +816,76 @@ button.chip[aria-pressed="true"] { border-color: var(--color-accent-border); bac
   min-height: var(--control-height-md);
   justify-content: center;
   border-style: dashed;
+}
+
+/* ---- 항목 추가·수정 모달 -------------------------------------------------- */
+
+.item-modal {
+  width: min(640px, calc(100% - var(--space-6)));
+  max-height: calc(100dvh - var(--space-12));
+  margin: auto;
+  padding: 0;
+  overflow: hidden;
+  border: var(--border-thin) solid var(--color-border-strong);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-lg);
+}
+
+.item-modal::backdrop {
+  background: oklch(14.8% 0.004 228.8 / 0.52);
+}
+
+.item-modal__panel {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - var(--space-12));
+}
+
+.item-modal__header {
+  flex: none;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-6) var(--space-4);
+  border-bottom: var(--border-thin) solid var(--color-divider);
+}
+
+.item-modal__title {
+  font-size: var(--text-lg);
+  line-height: var(--leading-lg);
+  font-weight: var(--weight-semibold);
+}
+
+.item-modal__context {
+  margin-top: var(--space-1);
+  color: var(--color-text-subtle);
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+}
+
+.item-modal__close {
+  flex: none;
+  width: var(--control-height-sm);
+  height: var(--control-height-sm);
+}
+
+.item-modal__body {
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-5) var(--space-6) var(--space-6);
+}
+
+@media (max-width: 540px) {
+  .item-modal {
+    width: calc(100% - var(--space-6));
+    max-height: calc(100dvh - var(--space-6));
+  }
+  .item-modal__panel { max-height: calc(100dvh - var(--space-6)); }
+  .item-modal__header { padding: var(--space-4); }
+  .item-modal__body { padding: var(--space-4); }
 }
 
 /* 좁은 화면에서는 기한·사유를 아래 줄로 내립니다. 옆에 두면 내용이 두 글자씩 끊깁니다 */
