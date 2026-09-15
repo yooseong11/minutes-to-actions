@@ -104,16 +104,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       },
       body: JSON.stringify({
         // 기본값은 Vercel에 OPENAI_MODEL을 안 넣었을 때만 쓰인다
-        model: process.env.OPENAI_MODEL || 'gpt-6-astra',
+        model: process.env.OPENAI_MODEL || 'gpt-5.6-sol',
         store: false,
         instructions: SYSTEM_PROMPT,
         // 사용자가 고른 날짜만 넘긴다. 오늘 날짜를 '회의 날짜'라고 알려주면
         // AI가 원문 대신 그걸 meetingDateRaw로 베껴 쓴다.
         input: buildUserMessage(body.text, body.meetingDate),
-        // 추론 강도. 항목이 발화 단위로 잘게 쪼개지는 것이 추론 부족 때문인지
-        // 프롬프트 때문인지 가르려고, **프롬프트는 그대로 두고 이 값만** 올렸다.
-        // Vercel에 OPENAI_REASONING_EFFORT를 넣으면 코드 수정 없이 되돌릴 수 있다.
-        reasoning: { effort: process.env.OPENAI_REASONING_EFFORT || 'high' },
+        // 추론 강도. Sol + medium 조합으로 회귀 샘플 5건이 모두 55초 안에 완료됐다.
+        // Vercel에 OPENAI_REASONING_EFFORT를 넣으면 코드 수정 없이 실험할 수 있다.
+        reasoning: { effort: process.env.OPENAI_REASONING_EFFORT || 'medium' },
         // 추론 토큰도 이 한도 안에서 쓰인다. effort만 올리고 이걸 안 올리면
         // 추론이 한도를 먹고 출력이 잘려 status가 'completed'로 안 온다.
         max_output_tokens: 24_000,
