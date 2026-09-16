@@ -11,7 +11,7 @@ import './App.css'
 
 const MAX_TEXT_LENGTH = 700
 
-/** 더미 데이터 01~05. 01만 손으로 보강한 것이고, 02~05는 회귀 실행(20260916-0650) 결과입니다. */
+/** 예시 회의록 01~05. 01만 손으로 보강한 것이고, 02~05는 회귀 실행(20260916-0650) 결과입니다. */
 const SAMPLES: { label: string; text: string; meeting: ProcessedMeeting }[] = [
   { label: '01', text: SAMPLE_01_TEXT, meeting: SAMPLE_01 },
   { label: '02', text: SAMPLE_02_TEXT, meeting: SAMPLE_02 },
@@ -68,7 +68,7 @@ export default function App() {
         <div className="label-row">
           <label className="label" htmlFor="minutes">현재 700자까지만 요약을 지원합니다.</label>
           <div className="sample-buttons">
-            <span className="label">더미 데이터</span>
+            <span className="label">예시 회의록</span>
             {SAMPLES.map((sample) => (
               <button
                 key={sample.label}
@@ -100,7 +100,7 @@ export default function App() {
 
         <div className="actions">
           <button
-            className="button"
+            className="button button--block"
             type="button"
             onClick={submit}
             disabled={loading}
