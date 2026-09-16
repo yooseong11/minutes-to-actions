@@ -1,5 +1,5 @@
 /**
- * extract-prompt.md의 출력 스키마와 1:1로 대응하는 타입.
+ * lib/extraction-config.ts의 출력 스키마와 1:1로 대응하는 타입.
  *
  * AI가 뱉는 "발췌형" 원시 타입(Raw*)과, 코드 후처리를 거친 타입을 나눈다.
  * 스키마가 바뀌면 여기와 regression/answer-key.md를 같이 고칠 것.

@@ -7,7 +7,7 @@
  * 설계 원칙: AI는 발췌만, 계산·대조·판단은 코드가 한다.
  */
 import { postprocess, type ProcessedMeeting } from '../lib/postprocess.js'
-import { EXTRACTION_SCHEMA, SYSTEM_PROMPT, buildUserMessage } from '../lib/prompt.js'
+import { EXTRACTION_PROMPT, EXTRACTION_SCHEMA, buildExtractionInput } from '../lib/extraction-config.js'
 import type { RawExtraction } from '../lib/types.js'
 
 // @vercel/node를 의존성으로 들이지 않기 위해 필요한 부분만 선언한다.
@@ -106,10 +106,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
         // 기본값은 Vercel에 OPENAI_MODEL을 안 넣었을 때만 쓰인다
         model: process.env.OPENAI_MODEL || 'gpt-5.6-sol',
         store: false,
-        instructions: SYSTEM_PROMPT,
+        instructions: EXTRACTION_PROMPT,
         // 사용자가 고른 날짜만 넘긴다. 오늘 날짜를 '회의 날짜'라고 알려주면
         // AI가 원문 대신 그걸 meetingDateRaw로 베껴 쓴다.
-        input: buildUserMessage(body.text, body.meetingDate),
+        input: buildExtractionInput(body.text, body.meetingDate),
         // 추론 강도. Sol + medium 조합으로 회귀 샘플 5건이 모두 55초 안에 완료됐다.
         // Vercel에 OPENAI_REASONING_EFFORT를 넣으면 코드 수정 없이 실험할 수 있다.
         reasoning: { effort: process.env.OPENAI_REASONING_EFFORT || 'medium' },
