@@ -1,5 +1,14 @@
 import { useState } from 'react'
-import { createItem, editItem, editMeetingAttendees, editMeetingTpo, type EditableMeeting, type ItemPatch } from '../lib/edit.js'
+import {
+  createItem,
+  deleteAgenda,
+  editAgenda,
+  editItem,
+  editMeetingAttendees,
+  editMeetingTpo,
+  type EditableMeeting,
+  type ItemPatch,
+} from '../lib/edit.js'
 import type { MeetingDateSource, ProcessedMeeting } from '../lib/postprocess.js'
 import ItemModal from './ItemModal.js'
 import type { ItemValues } from './ItemForm.js'
@@ -97,6 +106,19 @@ export default function MeetingEditor({ meeting }: { meeting: ProcessedMeeting }
                 commit(next, assigneeChanged
                   ? '참석자를 수정하고, 그 사람이 담당이던 항목도 함께 맞췄어요.'
                   : '참석자를 수정했어요.')
+              }}
+              onSaveAgenda={(agendaId, values) => {
+                const next = editAgenda(draft, agendaId, values)
+                if (next === draft) {
+                  setNotice('변경된 내용이 없어요.')
+                  return
+                }
+                commit(next, '안건을 수정했어요.')
+              }}
+              onDeleteAgenda={agendaId => {
+                const itemCount = draft.items.filter(item => item.agendaId === agendaId).length
+                commit(deleteAgenda(draft, agendaId),
+                  `안건과 포함된 항목 ${itemCount}개를 삭제했어요. 되돌릴 수 있습니다.`)
               }}
               onAdd={agendaId => setEditor({ mode: 'add', agendaId })}
               onEdit={itemId => setEditor({ mode: 'edit', itemId })}

@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { SECTIONS } from '../lib/labels.js'
 import type { MeetingDateSource } from '../lib/postprocess.js'
-import type { AttendeeDraft, EditableItem, EditableMeeting, TpoValues } from '../lib/edit.js'
+import type { AgendaValues, AttendeeDraft, EditableItem, EditableMeeting, TpoValues } from '../lib/edit.js'
+import AgendaDeleteDialog from './AgendaDeleteDialog.js'
 import ItemCard from './ItemCard.js'
 
 /**
@@ -40,16 +41,21 @@ const TYPE_ORDER = SECTIONS.map((s) => s.type)
 export default function ResultDoc({
   meeting,
   dateSourceLabel,
-  onSaveTpo, onSaveAttendees, onEdit, onDelete, onAdd,
+  onSaveTpo, onSaveAttendees, onSaveAgenda, onDeleteAgenda, onEdit, onDelete, onAdd,
 }: {
   meeting: EditableMeeting
   dateSourceLabel: Record<MeetingDateSource, string>
   onSaveTpo: (values: TpoValues) => void
   onSaveAttendees: (drafts: AttendeeDraft[]) => void
+  onSaveAgenda: (id: string, values: AgendaValues) => void
+  onDeleteAgenda: (id: string) => void
   onEdit: (id: string) => void
   onDelete: (id: string) => void
   onAdd: (agendaId: string) => void
 }) {
+  const [deletingAgendaId, setDeletingAgendaId] = useState<string | null>(null)
+  const deletingAgenda = meeting.agendas.find(agenda => agenda.id === deletingAgendaId)
+
   return (
     <div className="doc">
       <AttendeeSection meeting={meeting} onSave={onSaveAttendees} />
@@ -75,6 +81,8 @@ export default function ResultDoc({
                 title={agenda.title}
                 summary={agenda.summary}
                 items={sortByType(meeting.items.filter((i) => i.agendaId === agenda.id))}
+                onSave={values => onSaveAgenda(agenda.id, values)}
+                onDeleteAgenda={() => setDeletingAgendaId(agenda.id)}
                 onEdit={onEdit}
                 onDelete={onDelete}
                 onAdd={() => onAdd(agenda.id)}
@@ -83,6 +91,18 @@ export default function ResultDoc({
           </div>
         )}
       </Section>
+
+      {deletingAgenda && (
+        <AgendaDeleteDialog
+          title={deletingAgenda.title}
+          itemCount={meeting.items.filter(item => item.agendaId === deletingAgenda.id).length}
+          onClose={() => setDeletingAgendaId(null)}
+          onConfirm={() => {
+            setDeletingAgendaId(null)
+            onDeleteAgenda(deletingAgenda.id)
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -99,27 +119,107 @@ function sortByType(items: EditableItem[]): EditableItem[] {
  * 항목이 전부 환각으로 걸러졌다면, 그 사실이 화면에 남아야 합니다.
  */
 function Agenda({
-  title, summary, items, onEdit, onDelete, onAdd,
+  title, summary, items, onSave, onDeleteAgenda, onEdit, onDelete, onAdd,
 }: {
   title: string
   summary: string | null
   items: EditableItem[]
+  onSave: (values: AgendaValues) => void
+  onDeleteAgenda: () => void
   onEdit: (id: string) => void
   onDelete: (id: string) => void
   onAdd: () => void
 }) {
+  const [editing, setEditing] = useState(false)
+  const [draftTitle, setDraftTitle] = useState(title)
+  const [draftSummary, setDraftSummary] = useState(summary ?? '')
+  const [error, setError] = useState('')
+  const titleInput = useRef<HTMLInputElement>(null)
+  const focusTarget = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null)
+  const stopEditing = useCallback(() => {
+    setEditing(false)
+    setError('')
+  }, [])
+  const formRef = useCancelOnOutside(editing, stopEditing)
+
+  useEffect(() => {
+    if (editing) (focusTarget.current ?? titleInput.current)?.focus()
+  }, [editing])
+
+  function startEditing(target?: HTMLInputElement | HTMLTextAreaElement) {
+    focusTarget.current = target ?? null
+    setDraftTitle(title)
+    setDraftSummary(summary ?? '')
+    setError('')
+    setEditing(true)
+  }
+
+  const shownTitle = editing ? draftTitle : title
+  const shownSummary = editing ? draftSummary : (summary ?? '')
+
   return (
     <section className="agenda">
-      <h3 className="agenda-title">
-        {title}
-        <span className="agenda-count">항목 {items.length}</span>
-      </h3>
-
-      {summary === null ? (
-        <p className="agenda-summary agenda-summary--empty">요약할 논의가 없습니다.</p>
-      ) : (
-        <p className="agenda-summary">{summary}</p>
-      )}
+      <form
+        ref={formRef}
+        className={editing ? 'agenda-editor agenda-editor--editing' : 'agenda-editor'}
+        onSubmit={event => {
+          event.preventDefault()
+          if (!editing) return
+          if (!draftTitle.trim()) {
+            setError('안건 제목을 입력해 주세요.')
+            return
+          }
+          onSave({ title: draftTitle, summary: draftSummary })
+          stopEditing()
+        }}
+        onKeyDown={event => { if (editing && event.key === 'Escape') stopEditing() }}
+      >
+        <div className="agenda-heading">
+          <h3 className="agenda-title agenda-editable">
+            <input
+              ref={titleInput}
+              className="agenda-control agenda-title-input"
+              value={shownTitle}
+              readOnly={!editing}
+              tabIndex={editing ? 0 : -1}
+              aria-label="안건 제목"
+              onChange={event => { setDraftTitle(event.currentTarget.value); setError('') }}
+              onDoubleClick={event => { if (!editing) startEditing(event.currentTarget) }}
+            />
+          </h3>
+          <div className="agenda-actions">
+            {editing ? (
+              <button key="save" type="submit" className="button button--quiet button--strong">저장</button>
+            ) : (
+              <button key="edit" type="button" className="button button--quiet" onClick={() => startEditing()}>수정</button>
+            )}
+            <button
+              type="button"
+              className="button button--quiet button--danger"
+              onClick={() => {
+                if (editing) stopEditing()
+                onDeleteAgenda()
+              }}
+            >
+              삭제
+            </button>
+          </div>
+        </div>
+        <div className="agenda-summary-field agenda-editable">
+          <textarea
+            className="agenda-control agenda-summary-input"
+            value={shownSummary}
+            readOnly={!editing}
+            tabIndex={editing ? 0 : -1}
+            rows={1}
+            aria-label="안건 요약"
+            placeholder="요약할 논의가 없습니다."
+            onChange={event => setDraftSummary(event.currentTarget.value)}
+            onDoubleClick={event => { if (!editing) startEditing(event.currentTarget) }}
+          />
+        </div>
+        {error && <p className="error" role="alert">{error}</p>}
+      </form>
 
       {items.length === 0 ? (
         <p className="doc-empty">이 안건에 남은 항목이 없습니다.</p>
@@ -283,7 +383,6 @@ function AttendeeSection({ meeting, onSave }: {
                 required
                 size={Math.max(row.nameRaw.length, 3)}
                 aria-label="참석자 이름"
-                title={editing ? undefined : '두 번 누르면 고칠 수 있어요'}
                 onChange={event => patch(row.uid, 'nameRaw', event.currentTarget.value)}
                 onDoubleClick={event => { if (!editing) startEditing(event.currentTarget) }}
               />
@@ -298,7 +397,6 @@ function AttendeeSection({ meeting, onSave }: {
                   placeholder="소속"
                   size={Math.max((row.contextRaw ?? '').length, 2)}
                   aria-label="소속"
-                  title={editing ? undefined : '두 번 누르면 고칠 수 있어요'}
                   onChange={event => patch(row.uid, 'contextRaw', event.currentTarget.value)}
                   onDoubleClick={event => { if (!editing) startEditing(event.currentTarget) }}
                 />
@@ -477,7 +575,6 @@ function TpoRow({ label, value, onChange, editing, type = 'text', raw, edited = 
           readOnly={!editing}
           tabIndex={editing ? 0 : -1}
           placeholder="원문에 없음"
-          title={editing ? undefined : '두 번 누르면 고칠 수 있어요'}
           onChange={event => onChange(event.currentTarget.value)}
           onDoubleClick={event => { if (!editing) onStartEdit(event.currentTarget) }}
         />
