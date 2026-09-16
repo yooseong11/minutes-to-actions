@@ -444,6 +444,11 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* 시각·장소·목적은 짧아도 약 10글자 너비를 맞추고, 긴 값은 내용만큼 늘어납니다. */
+.tpo-row__control:not(.tpo-row__control--date) {
+  min-width: calc(10em + var(--space-4) + var(--border-thin) + var(--border-thin));
+}
+
 /* field-sizing 이 없는 브라우저(현재 Safari·Firefox)는 예전처럼 줄을 채웁니다 */
 @supports not (field-sizing: content) {
   .tpo-row__control { flex: 1; }
@@ -474,6 +479,12 @@
 .tpo-row__control:read-only:focus,
 .tpo-row__control:read-only:focus-visible { outline: none; }
 .tpo-row__control::placeholder { color: var(--color-text-subtle); }
+
+.tpo-row__control:read-only:hover {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface);
+  cursor: text;
+}
 
 /* 수정 모드: 달라지는 것은 테두리 색과 바탕색뿐입니다 */
 .tpo-row--editing .tpo-row__control {
@@ -540,6 +551,13 @@
   border-color: var(--color-border);
   background: var(--color-surface);
 }
+
+.person:not(.person--editing):hover {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface);
+}
+
+.person:not(.person--editing):hover input { cursor: text; }
 
 .person input {
   box-sizing: border-box;
@@ -677,26 +695,100 @@ button.chip[aria-pressed="true"] { border-color: var(--color-accent-border); bac
   border-radius: var(--radius-lg);
 }
 
-.agenda-title {
+.agenda-heading {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
   gap: var(--space-2);
   padding-bottom: var(--space-2);
   border-bottom: var(--border-thin) solid var(--color-divider);
+}
+
+.agenda-control {
+  box-sizing: border-box;
+  min-width: 0;
+  border: var(--border-thin) solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  transition:
+    border-color var(--duration-fast) var(--ease),
+    background var(--duration-fast) var(--ease);
+}
+
+.agenda-control:read-only {
+  cursor: default;
+  caret-color: transparent;
+}
+
+.agenda-control:read-only:focus,
+.agenda-control:read-only:focus-visible { outline: none; }
+
+.agenda-editor--editing .agenda-control {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface);
+}
+
+.agenda-editor--editing .agenda-control:focus {
+  border-color: var(--color-accent);
+  outline: var(--border-focus) solid color-mix(in srgb, var(--color-focus-ring) 20%, transparent);
+  outline-offset: 0;
+}
+
+.agenda-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.agenda-editor:not(.agenda-editor--editing) .agenda-editable:hover .agenda-control {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface);
+  cursor: text;
+}
+
+.agenda-title-input {
+  width: 100%;
+  height: var(--control-height-sm);
+  padding: 0 var(--space-1);
   font-size: var(--text-base);
   line-height: var(--leading-base);
   font-weight: var(--weight-semibold);
-  overflow-wrap: anywhere;
 }
 
-.agenda-count {
+.agenda-actions {
   margin-left: auto;
-  font-size: var(--text-xs);
-  line-height: var(--leading-xs);
-  font-weight: var(--weight-regular);
-  color: var(--color-text-subtle);
-  font-variant-numeric: tabular-nums;
+  display: flex;
+  flex: none;
+  gap: var(--space-1);
+}
+
+.agenda-actions .button { align-self: auto; }
+
+.agenda-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.agenda-summary-input {
+  field-sizing: content;
+  display: block;
+  width: 100%;
+  min-height: var(--control-height-sm);
+  padding: var(--space-1);
+  font-size: var(--text-sm);
+  line-height: var(--leading-base);
+  color: var(--color-text-muted);
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.agenda-summary-field { min-width: 0; }
+
+.agenda-summary-input:read-only { resize: none; }
+.agenda-editor--editing .agenda-summary-input {
+  resize: vertical;
 }
 
 /* AI가 쓴 문장입니다. 안건 블록 위의 경고가 이 칸과 제목을 함께 가리킵니다 */
@@ -979,6 +1071,33 @@ button.chip[aria-pressed="true"] { border-color: var(--color-accent-border); bac
   padding: var(--space-5) var(--space-6) var(--space-6);
 }
 
+.delete-modal { width: min(480px, calc(100% - var(--space-6))); }
+
+.delete-modal__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.delete-modal__description {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  line-height: var(--leading-base);
+  overflow-wrap: anywhere;
+}
+
+.delete-modal__description strong { color: var(--color-text); }
+
+.delete-modal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.delete-modal__actions .button { align-self: auto; }
+
 @media (max-width: 540px) {
   .item-modal {
     width: calc(100% - var(--space-6));
@@ -992,6 +1111,7 @@ button.chip[aria-pressed="true"] { border-color: var(--color-accent-border); bac
 /* 좁은 화면에서는 기한·사유를 아래 줄로 내립니다. 옆에 두면 내용이 두 글자씩 끊깁니다 */
 @media (max-width: 540px) {
   .agenda { padding: var(--space-3); }
+  .agenda-title-input { min-width: 0; }
   .row-line { align-items: center; flex-wrap: wrap; row-gap: var(--space-1); }
   .type-tag, .row-actions { align-self: center; }
   .row-text { flex-basis: 100%; order: 2; }
