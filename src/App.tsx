@@ -1,10 +1,24 @@
 import { useState } from 'react'
 import { SAMPLE_01, SAMPLE_01_TEXT } from './fixtures/sample01.js'
+import { SAMPLE_02, SAMPLE_02_TEXT } from './fixtures/sample02.js'
+import { SAMPLE_03, SAMPLE_03_TEXT } from './fixtures/sample03.js'
+import { SAMPLE_04, SAMPLE_04_TEXT } from './fixtures/sample04.js'
+import { SAMPLE_05, SAMPLE_05_TEXT } from './fixtures/sample05.js'
+import type { ProcessedMeeting } from '../lib/postprocess.js'
 import MeetingEditor from './MeetingEditor.js'
 import { useExtract } from './useExtract.js'
 import './App.css'
 
 const MAX_TEXT_LENGTH = 700
+
+/** 더미 데이터 01~05. 01만 손으로 보강한 것이고, 02~05는 회귀 실행(20260916-0650) 결과입니다. */
+const SAMPLES: { label: string; text: string; meeting: ProcessedMeeting }[] = [
+  { label: '01', text: SAMPLE_01_TEXT, meeting: SAMPLE_01 },
+  { label: '02', text: SAMPLE_02_TEXT, meeting: SAMPLE_02 },
+  { label: '03', text: SAMPLE_03_TEXT, meeting: SAMPLE_03 },
+  { label: '04', text: SAMPLE_04_TEXT, meeting: SAMPLE_04 },
+  { label: '05', text: SAMPLE_05_TEXT, meeting: SAMPLE_05 },
+]
 
 /**
  * 섹션 3 — 붙여넣기 → 추출 → 결과.
@@ -39,9 +53,9 @@ export default function App() {
   const submit = () => void extract(text, null, today())
 
   /** 더미 데이터. 개발 중 화면만 볼 때 토큰을 쓰지 않기 위한 것입니다. */
-  const loadSample = () => {
-    setText(SAMPLE_01_TEXT)
-    showResult(SAMPLE_01)
+  const loadSample = (sample: (typeof SAMPLES)[number]) => {
+    setText(sample.text)
+    showResult(sample.meeting)
   }
 
   return (
@@ -51,7 +65,23 @@ export default function App() {
       </header>
 
       <main className="main">
-        <label className="label" htmlFor="minutes">현재 700자까지만 요약을 지원합니다.</label>
+        <div className="label-row">
+          <label className="label" htmlFor="minutes">현재 700자까지만 요약을 지원합니다.</label>
+          <div className="sample-buttons">
+            <span className="label">더미 데이터</span>
+            {SAMPLES.map((sample) => (
+              <button
+                key={sample.label}
+                className="button button--quiet"
+                type="button"
+                onClick={() => loadSample(sample)}
+                disabled={loading}
+              >
+                {sample.label}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="input-group">
           <textarea
             id="minutes"
@@ -82,13 +112,6 @@ export default function App() {
             {loading ? '추출하는 중…' : '추출하기'}
           </button>
           {loading && <span className="hint">최대 55초 걸릴 수 있어요.</span>}
-
-          
-          
-            <button className="button button--quiet" type="button" onClick={loadSample} disabled={loading}>
-              더미 데이터 (01번)
-            </button>
-          
         </div>
 
         {state.status === 'error' && (
