@@ -122,7 +122,7 @@ export default function MeetingEditor({ meeting }: { meeting: ProcessedMeeting }
               }}
               onAdd={agendaId => setEditor({ mode: 'add', agendaId })}
               onEdit={itemId => setEditor({ mode: 'edit', itemId })}
-              onDelete={id => commit({ ...draft, items: draft.items.filter(item => item.id !== id) }, '항목을 삭제했어요. 되돌릴 수 있습니다.')} />
+              onDelete={id => commit({ ...draft, items: draft.items.filter(item => item.id !== id) }, '')} />
 
             {editor && (() => {
               const item = editor.mode === 'edit' ? draft.items.find(i => i.id === editor.itemId) : undefined
