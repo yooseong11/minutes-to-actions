@@ -51,7 +51,7 @@ export default function App() {
       </header>
 
       <main className="main">
-        <label className="label" htmlFor="minutes">현재 비용 문제로 700자까지만 요약을 지원합니다.</label>
+        <label className="label" htmlFor="minutes">현재 700자까지만 요약을 지원합니다.</label>
         <div className="input-group">
           <textarea
             id="minutes"
