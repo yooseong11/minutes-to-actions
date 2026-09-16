@@ -1,5 +1,5 @@
 import { parseDue, toEpoch } from './date.js'
-import type { ProcessedItem, ProcessedMeeting } from './postprocess.js'
+import type { ProcessedAgenda, ProcessedItem, ProcessedMeeting } from './postprocess.js'
 import type { ItemType, RawAttendee, ReviewReason } from './types.js'
 
 export type EditableField = 'content' | 'type' | 'assignee' | 'due'
@@ -10,7 +10,14 @@ export interface EditableItem extends ProcessedItem {
   userCreated?: boolean
   editedFields?: EditableField[]
 }
+export type EditableAgendaField = 'title' | 'summary'
+export interface EditableAgenda extends ProcessedAgenda {
+  /** 최초 추출 결과. 사용자가 고친 제목·요약으로 덮어쓰지 않는다. */
+  original?: ProcessedAgenda
+  editedFields?: EditableAgendaField[]
+}
 export interface EditableMeeting extends ProcessedMeeting {
+  agendas: EditableAgenda[]
   items: EditableItem[]
   /** 최초 추출값. 사용자가 TPO를 고쳐도 원문에서 가져온 값을 잃지 않는다. */
   originalTpo?: Pick<ProcessedMeeting, EditableTpoField | 'meetingDateSource'>
@@ -35,6 +42,7 @@ export interface AttendeeDraft {
 }
 export type ItemPatch = Partial<Pick<ProcessedItem, EditableField>>
 export type TpoValues = Pick<ProcessedMeeting, EditableTpoField>
+export type AgendaValues = Pick<ProcessedAgenda, 'title' | 'summary'>
 const ASSIGNEE_REASONS = new Set<ReviewReason>(['no_assignee', 'assignee_unknown', 'assignee_unmatched', 'duplicate_name'])
 
 export function editItem(item: EditableItem, patch: ItemPatch): EditableItem {
@@ -75,6 +83,41 @@ export function createItem(id: string, agendaId: string, type: ItemType, content
     dueAnchor: null, dueMethod: 'none', assigneeCandidates: [], preselect: false, confidence: 'high',
   }
   return editItem(item, { content, assignee, due })
+}
+
+/** 안건의 제목·요약만 고친다. 소속 항목은 건드리지 않고 최초 AI 결과를 보존한다. */
+export function editAgenda(meeting: EditableMeeting, agendaId: string, values: AgendaValues): EditableMeeting {
+  const agenda = meeting.agendas.find(current => current.id === agendaId)
+  if (!agenda) return meeting
+
+  const title = values.title.trim()
+  if (!title) throw new Error('안건 제목을 입력해 주세요.')
+  const summary = blankToNull(values.summary)
+  const changed: EditableAgendaField[] = []
+  if (title !== agenda.title) changed.push('title')
+  if (summary !== agenda.summary) changed.push('summary')
+  if (changed.length === 0) return meeting
+
+  return {
+    ...meeting,
+    agendas: meeting.agendas.map(current => current.id === agendaId ? {
+      ...current,
+      title,
+      summary,
+      original: current.original ?? current,
+      editedFields: [...new Set([...(current.editedFields ?? []), ...changed])],
+    } : current),
+  }
+}
+
+/** 안건을 지울 때 그 안건에 속한 항목도 함께 지운다. 고아 항목을 만들지 않는다. */
+export function deleteAgenda(meeting: EditableMeeting, agendaId: string): EditableMeeting {
+  if (!meeting.agendas.some(agenda => agenda.id === agendaId)) return meeting
+  return {
+    ...meeting,
+    agendas: meeting.agendas.filter(agenda => agenda.id !== agendaId),
+    items: meeting.items.filter(item => item.agendaId !== agendaId),
+  }
 }
 
 /** TPO 네 칸을 한 번에 저장한다. 날짜가 달라진 경우에만 자동 계산 기한도 다시 계산한다. */

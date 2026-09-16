@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { createItem, editItem, editMeetingTpo, recalculateMeeting } from '../lib/edit.js'
+import { createItem, deleteAgenda, editAgenda, editItem, editMeetingTpo, recalculateMeeting } from '../lib/edit.js'
 import { SAMPLE_01 } from '../src/fixtures/sample01.js'
 
 const candidate = SAMPLE_01.items.find(item => item.assigneeCandidates.length > 0)!
@@ -99,4 +99,36 @@ test('TPO에 변경이 없으면 새 편집 이력을 만들지 않는다', () =
     purposeRaw: SAMPLE_01.purposeRaw,
   })
   assert.equal(result, SAMPLE_01)
+})
+
+test('안건 수정은 공백을 정리하고 최초 AI 결과를 보존한다', () => {
+  const source = SAMPLE_01.agendas[0]
+  const first = editAgenda(SAMPLE_01, source.id, {
+    title: '  새 안건 제목  ',
+    summary: '   ',
+  })
+  const edited = first.agendas[0]
+
+  assert.equal(edited.title, '새 안건 제목')
+  assert.equal(edited.summary, null)
+  assert.equal(edited.original, source)
+  assert.deepEqual(edited.editedFields, ['title', 'summary'])
+
+  const second = editAgenda(first, source.id, { title: '두 번째 제목', summary: '새 요약' })
+  assert.equal(second.agendas[0].original, source)
+  assert.deepEqual(second.agendas[0].editedFields, ['title', 'summary'])
+  assert.throws(() => editAgenda(SAMPLE_01, source.id, { title: '  ', summary: null }))
+})
+
+test('안건 삭제는 소속 항목만 함께 지우고 다른 안건은 보존한다', () => {
+  const target = SAMPLE_01.agendas[0]
+  const otherAgendaIds = SAMPLE_01.agendas.slice(1).map(agenda => agenda.id)
+  const result = deleteAgenda(SAMPLE_01, target.id)
+
+  assert.deepEqual(result.agendas.map(agenda => agenda.id), otherAgendaIds)
+  assert.ok(result.items.every(item => item.agendaId !== target.id))
+  assert.deepEqual(
+    result.items,
+    SAMPLE_01.items.filter(item => item.agendaId !== target.id),
+  )
 })
