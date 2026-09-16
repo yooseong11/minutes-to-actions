@@ -1055,21 +1055,39 @@ button.chip[aria-pressed="true"] { border-color: var(--color-accent-border); bac
 /* 카드 폭을 정확히 반씩 나눕니다. flex-basis가 0이라야 글자 길이와 무관하게 반입니다.
    .button의 align-self: flex-start를 stretch로 덮습니다 — 안 덮으면 높이가 줄어듭니다.
    높이 64px(--space-16)은 --control-height-lg(48px)보다 큰 예외입니다.
-   이 줄은 컨트롤이 아니라 화면의 마무리라서, 스크롤 끝에서 바로 눈에 띄어야 합니다. */
+   이 줄은 컨트롤이 아니라 화면의 마무리라서, 스크롤 끝에서 바로 눈에 띄어야 합니다.
+   외곽선 버튼은 다크 모드에서 본문과 섞이므로, 모든 화면에서 강조색을 면으로 채웁니다. */
 .button--export {
   flex: 1 1 0;
+  min-width: 0;
   align-self: stretch;
   height: var(--space-16);
   padding: 0 var(--space-4);
-  background: transparent;
-  border: var(--border-thin) solid var(--color-accent-border);
-  color: var(--color-accent-text);
+  background: var(--color-accent);
+  border: var(--border-thin) solid var(--color-accent);
+  color: var(--color-on-accent);
   font-size: var(--text-lg);
   font-weight: var(--weight-semibold);
+  white-space: nowrap;
 }
-.button--export:hover { background: var(--color-accent-subtle); }
+.button--export:hover {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+}
+.button--export:active {
+  background: var(--color-accent-active);
+  border-color: var(--color-accent-active);
+}
 
-/* 좁은 화면에서 반씩 나누면 글자가 두 줄로 접힙니다. 위아래로 세웁니다 */
+/* 모바일에서도 두 동작을 한 묶음으로 읽도록 같은 줄을 유지합니다.
+   폭이 줄어드는 만큼 글자와 간격만 한 단계 낮추되, 터치 높이는 48px 이상 남깁니다. */
 @media (max-width: 540px) {
-  .export-bar { flex-direction: column; }
+  .export-bar { gap: var(--space-2); }
+  .button--export {
+    height: auto;
+    min-height: var(--control-height-lg);
+    padding: var(--space-3) var(--space-2);
+    font-size: var(--text-base);
+    line-height: var(--leading-base);
+  }
 }
