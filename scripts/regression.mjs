@@ -8,13 +8,18 @@
  *   node scripts/regression.mjs
  *   node scripts/regression.mjs --base http://localhost:3000   # vercel dev
  *
- * 결과: docs/regression-runs/<날짜-시각>/01.json ~ 05.json
+ * 결과: regression/runs/<날짜-시각>/01.json ~ 05.json
  *       같은 폴더에 summary.md — 화면에 찍히는 요약과 같은 내용
  *
  * 주의: 실행할 때마다 OpenAI 토큰이 나갑니다. 5건이면 5회입니다.
  */
 import { readdir, readFile, mkdir, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const INPUT_DIR = join(ROOT, 'regression', 'inputs')
+const RUNS_DIR = join(ROOT, 'regression', 'runs')
 
 const arg = (name, fallback) => {
   const i = process.argv.indexOf(`--${name}`)
@@ -28,14 +33,14 @@ const FALLBACK_DATE = arg('date', '2026-09-14')
 const KEY = process.env.EXTRACT_SHARED_KEY ?? ''
 
 const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '').replace(/(\d{8})(\d{4})/, '$1-$2')
-const outDir = join('docs', 'regression-runs', stamp)
+const outDir = join(RUNS_DIR, stamp)
 
-const samples = (await readdir('.'))
+const samples = (await readdir(INPUT_DIR))
   .filter((f) => /^0[1-5]_.*\.(txt|md)$/.test(f))
   .sort()
 
 if (samples.length === 0) {
-  console.error('더미 회의록을 못 찾았습니다. 레포 루트에서 실행하십시오.')
+  console.error(`더미 회의록을 못 찾았습니다: ${INPUT_DIR}`)
   process.exit(1)
 }
 
@@ -50,7 +55,7 @@ const say = (s) => {
 
 for (const file of samples) {
   const n = file.slice(0, 2)
-  const text = await readFile(file, 'utf8')
+  const text = await readFile(join(INPUT_DIR, file), 'utf8')
 
   const started = Date.now()
   let res
@@ -103,4 +108,4 @@ for (const file of samples) {
 
 await writeFile(join(outDir, 'summary.md'), `# 실행 요약 ${stamp}\n\n\`\`\`\n${lines.join('\n')}\`\`\`\n`, 'utf8')
 console.log(`원본 응답과 요약이 ${outDir} 에 있습니다.`)
-console.log('채점은 00_함정_정답지.md와 대조해서 손으로 하십시오.')
+console.log('채점은 regression/answer-key.md와 대조해서 손으로 하십시오.')

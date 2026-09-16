@@ -5,7 +5,7 @@
  * 항목은 여전히 발화 단위이고 quote 대조도 그대로 돈다. 달라진 것은
  * 항목이 최상위에 흩어지지 않고 안건 안에 들어간다는 점뿐이다.
  *
- * 이 파일과 extract-prompt.md / 00_함정_정답지.md는 짝을 이룬다.
+ * 이 파일과 extract-prompt.md / regression/answer-key.md는 짝을 이룬다.
  * 하나를 고치면 나머지도 같이 고칠 것.
  */
 
