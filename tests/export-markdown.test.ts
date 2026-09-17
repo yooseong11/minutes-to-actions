@@ -92,9 +92,26 @@ test('안건 제목·요약이 검증 안 된 칸이라는 경고가 문서에�
   assert.match(toMarkdown(meeting()), /확인이 필요합니다/)
 })
 
-test('인용문은 blockquote로 항목 아래 붙는다', () => {
+test('기본값에서는 항목별 인용문과 원문 전문을 표시하지 않는다', () => {
   const md = toMarkdown(meeting({ items: [item({ quote: '토너 떨어졌어요' })] }))
-  assert.match(md, /> 토너 떨어졌어요/)
+  assert.doesNotMatch(md, /> 토너 떨어졌어요/)
+  assert.doesNotMatch(md, /## 회의록 원문/)
+})
+
+test('원문 표시를 고르면 한 줄 인용문과 원문 전문을 함께 붙인다', () => {
+  const md = toMarkdown(
+    meeting({ items: [item({ quote: '토너가\n떨어졌어요' })] }),
+    { includeSource: true, sourceText: '회의 시작\n토너가 떨어졌어요\n회의 끝' },
+  )
+  assert.match(md, /> 토너가 떨어졌어요/)
+  assert.doesNotMatch(md, /> 토너가\n떨어졌어요/)
+  assert.match(md, /## 회의록 원문\n\n```text\n회의 시작\n토너가 떨어졌어요\n회의 끝\n```/)
+})
+
+test('원문 전문의 연속 빈 줄을 그대로 보존한다', () => {
+  const sourceText = '첫 문단\n\n\n둘째 문단'
+  const md = toMarkdown(meeting(), { includeSource: true, sourceText })
+  assert.match(md, /```text\n첫 문단\n\n\n둘째 문단\n```/)
 })
 
 test('안건 안에서 결정 → 할 일 → 미결 순으로 정렬된다', () => {

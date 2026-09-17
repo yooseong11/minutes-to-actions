@@ -26,16 +26,28 @@ const ABSENT = '원문에 없음'
 /** 안건 안에서 읽는 순서. 화면과 같은 규칙(결정 → 할 일 → 미결) */
 const TYPE_ORDER: ProcessedItem['type'][] = ['decision', 'action', 'open']
 
-export function toMarkdown(meeting: ProcessedMeeting): string {
-  return [
+export interface MarkdownOptions {
+  /** 항목별 원문 인용과 회의록 전문을 함께 내보낼지. 기본은 false입니다. */
+  includeSource?: boolean
+  /** 추출 당시의 회의록 원문 */
+  sourceText?: string
+}
+
+export function toMarkdown(meeting: ProcessedMeeting, options: MarkdownOptions = {}): string {
+  const lines = [
     '# 회의록',
     '',
     ...attendeeBlock(meeting.attendees),
     '',
     ...tpoBlock(meeting),
     '',
-    ...agendaBlock(meeting),
-  ].join('\n').replace(/\n{3,}/g, '\n\n').trimEnd() + '\n'
+    ...agendaBlock(meeting, options.includeSource === true),
+  ]
+  const summary = lines.join('\n').replace(/\n{3,}/g, '\n\n').trimEnd()
+  if (!options.includeSource) return `${summary}\n`
+
+  // 전문 안의 연속 빈 줄은 원문의 일부입니다. 요약의 빈 줄 정리 대상에 섞지 않습니다.
+  return `${summary}\n\n${sourceBlock(options.sourceText ?? '').join('\n')}\n`
 }
 
 /** 참석자 — 화면의 Joiner 칸 */
@@ -62,7 +74,7 @@ function tpoBlock(meeting: ProcessedMeeting): string[] {
  * 항목이 하나도 없는 안건도 지우지 않습니다 — 화면과 같은 규칙입니다.
  * AI가 안건이라고 본 화제인데 항목이 비었다는 사실 자체가 정보입니다.
  */
-function agendaBlock(meeting: ProcessedMeeting): string[] {
+function agendaBlock(meeting: ProcessedMeeting, includeSource: boolean): string[] {
   const lines = [
     '## 안건',
     '',
@@ -78,7 +90,7 @@ function agendaBlock(meeting: ProcessedMeeting): string[] {
     lines.push(agenda.summary ?? '_요약할 논의가 없습니다._', '')
     const items = sortByType(meeting.items.filter((i) => i.agendaId === agenda.id))
     if (items.length === 0) lines.push('_이 안건에 남은 항목이 없습니다._', '')
-    else lines.push(...items.flatMap(itemLines), '')
+    else lines.push(...items.flatMap((item) => itemLines(item, includeSource)), '')
   })
   return lines
 }
@@ -89,7 +101,7 @@ function agendaBlock(meeting: ProcessedMeeting): string[] {
  * 화면의 줄과 같은 정보를 같은 순서로 답니다: 분류 → 담당자 → 내용 → 기한 → 검토 사유.
  * 번복된 항목은 배지가 아니라 취소선입니다. 항목의 상태라서 그렇습니다.
  */
-function itemLines(item: ProcessedItem): string[] {
+function itemLines(item: ProcessedItem, includeSource: boolean): string[] {
   const struck = item.reviewReasons.includes('superseded')
   const text = struck ? `~~${item.content}~~` : item.content
   const due = item.due ?? item.dueDateRaw
@@ -104,12 +116,28 @@ function itemLines(item: ProcessedItem): string[] {
   ].filter(Boolean).join(' ')
 
   const detail: string[] = []
-  if (item.quote) detail.push(`  > ${item.quote}`)
+  if (includeSource && item.quote) detail.push(`  > ${oneLine(item.quote)}`)
   // 인용문 바로 뒤에 `>` 줄을 또 붙이면 마크다운이 한 덩이로 합쳐 읽힙니다.
   // 뒤집힌 내용은 원문 인용이 아니라 항목에 대한 주석이라 목록 줄로 뺍니다.
-  if (item.supersededQuote) detail.push(`  - 뒤집힌 내용: ${item.supersededQuote}`)
+  if (includeSource && item.supersededQuote) detail.push(`  - 뒤집힌 내용: ${oneLine(item.supersededQuote)}`)
   if (item.blockedByRaw) detail.push(`  - 선행: ${item.blockedByRaw}`)
   return [head, ...detail]
+}
+
+/** 원문 전문은 입력 모양을 잃지 않도록 코드 블록으로 보존합니다. */
+function sourceBlock(sourceText: string): string[] {
+  const source = sourceText.trim()
+  if (!source) return ['## 회의록 원문', '', '_원문이 없습니다._']
+
+  // 원문 안의 백틱보다 긴 fence를 골라 원문이 코드 블록을 닫지 못하게 합니다.
+  const longestRun = Math.max(0, ...(source.match(/`+/g) ?? []).map((run) => run.length))
+  const fence = '`'.repeat(Math.max(3, longestRun + 1))
+  return ['## 회의록 원문', '', `${fence}text`, source, fence]
+}
+
+/** 항목별 인용은 읽기 쉽게 공백과 줄바꿈을 한 줄로 접습니다. */
+function oneLine(value: string): string {
+  return value.replace(/\s+/g, ' ').trim()
 }
 
 /** 담당자. 확정 안 된 할 일은 빈칸이 아니라 "담당자 미정"으로 남깁니다 */

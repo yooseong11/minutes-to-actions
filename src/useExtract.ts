@@ -17,7 +17,7 @@ import type { ProcessedMeeting } from '../lib/postprocess.js'
 export type ExtractState =
   | { status: 'idle' }
   | { status: 'loading' }
-  | { status: 'done'; meeting: ProcessedMeeting; resultId: number }
+  | { status: 'done'; meeting: ProcessedMeeting; sourceText: string; resultId: number }
   | { status: 'error'; message: string }
 
 /** api/extract.ts 의 MAX_TEXT 와 같은 값. 왕복하지 않고 미리 막는다 */
@@ -95,7 +95,9 @@ export function useExtract() {
 
       const meeting = (await response.json()) as ProcessedMeeting
       if (controller.signal.aborted) return
-      setState({ status: 'done', meeting, resultId: ++resultSequence.current })
+      // 결과와 그 결과를 만든 원문을 한 묶음으로 보관합니다. 추출 뒤 입력칸을
+      // 고쳐도 내보내기에 다른 원문이 섞이지 않아야 합니다.
+      setState({ status: 'done', meeting, sourceText: trimmed, resultId: ++resultSequence.current })
     } catch (error) {
       // 사용자가 다시 눌러서 버린 요청은 에러가 아니다
       if (error instanceof DOMException && error.name === 'AbortError') return
@@ -109,10 +111,10 @@ export function useExtract() {
    * 서버를 거치지 않고 결과를 그대로 앉힙니다. **개발 중 더미 데이터용입니다.**
    * 진행 중인 요청이 있으면 버립니다 — 늦게 온 응답이 더미를 덮으면 안 됩니다.
    */
-  const showResult = useCallback((meeting: ProcessedMeeting) => {
+  const showResult = useCallback((meeting: ProcessedMeeting, sourceText: string) => {
     inFlight.current?.abort()
     inFlight.current = null
-    setState({ status: 'done', meeting, resultId: ++resultSequence.current })
+    setState({ status: 'done', meeting, sourceText: sourceText.trim(), resultId: ++resultSequence.current })
   }, [])
 
   return { state, extract, reset, showResult }

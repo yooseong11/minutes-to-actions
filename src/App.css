@@ -1186,6 +1186,31 @@ button.chip[aria-pressed="true"] { border-color: var(--color-accent-border); bac
 
 /* ---- 내보내기 (섹션 5) --------------------------------------------------- */
 
+.export-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.export-source-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: fit-content;
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.export-source-option input {
+  width: var(--space-4);
+  height: var(--space-4);
+  margin: 0;
+  accent-color: var(--color-accent);
+}
+
+.export-source-option__label { white-space: nowrap; }
+
 /* 문서를 끝까지 읽고 난 자리입니다. 위쪽 .actions의 작은 버튼과 같은 동작이고,
    여기서는 "다 봤으니 꺼내 간다"가 되므로 크게 둡니다. */
 .export-bar { display: flex; gap: var(--space-3); }

@@ -55,7 +55,7 @@ export default function App() {
   /** 더미 데이터. 개발 중 화면만 볼 때 토큰을 쓰지 않기 위한 것입니다. */
   const loadSample = (sample: (typeof SAMPLES)[number]) => {
     setText(sample.text)
-    showResult(sample.meeting)
+    showResult(sample.meeting, sample.text)
   }
 
   return (
@@ -119,7 +119,11 @@ export default function App() {
         )}
 
         {state.status === 'done' && (
-          <MeetingEditor key={state.resultId} meeting={state.meeting} />
+          <MeetingEditor
+            key={state.resultId}
+            meeting={state.meeting}
+            sourceText={state.sourceText}
+          />
         )}
       </main>
     </div>

@@ -23,7 +23,13 @@ const DATE_SOURCE_LABEL: Record<MeetingDateSource, string> = {
   none: '기준 날짜가 없어서 기한을 환산하지 못했어요',
 }
 
-export default function MeetingEditor({ meeting }: { meeting: ProcessedMeeting }) {
+export default function MeetingEditor({
+  meeting,
+  sourceText,
+}: {
+  meeting: ProcessedMeeting
+  sourceText: string
+}) {
   const [draft, setDraft] = useState<EditableMeeting>(meeting)
   const [history, setHistory] = useState<EditableMeeting[]>([])
   // 추가와 수정은 같은 데이터를 다루므로 하나의 모달 상태로 관리합니다.
@@ -31,6 +37,7 @@ export default function MeetingEditor({ meeting }: { meeting: ProcessedMeeting }
     { mode: 'add'; agendaId: string } | { mode: 'edit'; itemId: string } | null
   >(null)
   const [notice, setNotice] = useState('')
+  const [includeSource, setIncludeSource] = useState(false)
   const [restoreVersion, setRestoreVersion] = useState(0)
   function commit(next: EditableMeeting, message: string) {
     setHistory(previous => [...previous, draft])
@@ -54,7 +61,7 @@ export default function MeetingEditor({ meeting }: { meeting: ProcessedMeeting }
    */
   async function copyMarkdown() {
     try {
-      await navigator.clipboard.writeText(toMarkdown(draft))
+      await navigator.clipboard.writeText(toMarkdown(draft, { includeSource, sourceText }))
       setNotice('회의록 요약본을 마크다운 형식으로 복사했어요.')
       window.alert('회의록 요약본이 마크 다운 형식으로 복사가 완료됐습니다.')
     } catch {
@@ -185,9 +192,20 @@ export default function MeetingEditor({ meeting }: { meeting: ProcessedMeeting }
               읽기 전에 내보낼 일이 없고, 같은 버튼이 위아래에 있으면 어느 쪽이
               최신 편집을 담는지 사용자가 묻게 됩니다.
             */}
-            <div className="export-bar">
-              <button type="button" className="button button--export" onClick={copyMarkdown}>마크다운 복사</button>
-              <button type="button" className="button button--export" onClick={downloadCsv}>CSV 내려받기</button>
+            <div className="export-controls">
+              <label className="export-source-option">
+                <input
+                  type="checkbox"
+                  checked={includeSource}
+                  onChange={(event) => setIncludeSource(event.target.checked)}
+                />
+                <span className="export-source-option__label">원문 표시</span>
+                <span className="hint">항목별 인용문과 회의록 전문을 함께 복사합니다.</span>
+              </label>
+              <div className="export-bar">
+                <button type="button" className="button button--export" onClick={copyMarkdown}>마크다운 복사</button>
+                <button type="button" className="button button--export" onClick={downloadCsv}>CSV 내려받기</button>
+              </div>
             </div>
           </section>
   )
