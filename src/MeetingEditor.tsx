@@ -55,7 +55,8 @@ export default function MeetingEditor({ meeting }: { meeting: ProcessedMeeting }
   async function copyMarkdown() {
     try {
       await navigator.clipboard.writeText(toMarkdown(draft))
-      setNotice('마크다운을 복사했어요. 노션에 붙여넣으면 됩니다.')
+      setNotice('회의록 요약본을 마크다운 형식으로 복사했어요.')
+      window.alert('회의록 요약본이 마크 다운 형식으로 복사가 완료됐습니다.')
     } catch {
       // 클립보드는 보안 컨텍스트(https·localhost)에서만 동작합니다. 조용히 실패하지 않습니다.
       setNotice('복사하지 못했어요. 브라우저가 클립보드 접근을 막았을 수 있습니다.')
