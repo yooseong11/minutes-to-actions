@@ -4,6 +4,10 @@ import type { MeetingDateSource } from '../lib/postprocess.js'
 import type { AgendaValues, AttendeeDraft, EditableItem, EditableMeeting, TpoValues } from '../lib/edit.js'
 import AgendaDeleteDialog from './AgendaDeleteDialog.js'
 import ItemCard from './ItemCard.js'
+import EditBar from './ui/EditBar.js'
+import Icon from './ui/Icon.js'
+import Section from './ui/Section.js'
+import useCancelOnOutside from './ui/useCancelOnOutside.js'
 
 /**
  * 결과를 **회의록 문서 모양**으로 냅니다. 항목 목록이 아니라 문서입니다.
@@ -241,59 +245,6 @@ function Agenda({
         + 항목 추가
       </button>
     </section>
-  )
-}
-
-/**
- * 편집 영역 바깥을 누르면 취소. TPO와 참석자가 같이 씁니다.
- *
- * click이 아니라 pointerdown으로 잡습니다 — 저장 버튼을 누를 때 pointerdown이
- * 먼저 오는데, 그 target은 폼 안이라 취소로 새지 않습니다.
- */
-function useCancelOnOutside(editing: boolean, stop: () => void) {
-  const formRef = useRef<HTMLFormElement>(null)
-  useEffect(() => {
-    if (!editing) return
-    const cancelOutside = (event: PointerEvent) => {
-      if (!formRef.current?.contains(event.target as Node)) stop()
-    }
-    document.addEventListener('pointerdown', cancelOutside)
-    return () => document.removeEventListener('pointerdown', cancelOutside)
-  }, [editing, stop])
-  return formRef
-}
-
-/**
- * 읽기 모드와 수정 모드가 같은 자리에 서는 버튼.
- *
- * **key가 반드시 있어야 합니다.** 없으면 React가 두 버튼을 같은 자리의 같은
- * <button>으로 보고 DOM 노드를 재사용합니다. 그러면 「수정」을 누른 순간 그
- * 노드의 type이 button → submit으로 바뀌고, 브라우저가 아직 처리 중이던 클릭의
- * 기본 동작이 **폼 제출**이 됩니다. 곧바로 onSubmit이 돌아 편집이 바로 닫힙니다.
- */
-function EditBar({ editing, onStart }: { editing: boolean; onStart: () => void }) {
-  return (
-    <div className="tpo-bar">
-      {editing ? (
-        <button key="save" type="submit" className="button button--quiet button--strong">
-          저장
-        </button>
-      ) : (
-        <button key="edit" type="button" className="button button--quiet" onClick={onStart}>
-          수정
-        </button>
-      )}
-    </div>
-  )
-}
-
-/** 글리프 문자(×)는 폰트에 따라 곱셈기호로 보입니다. currentColor라 다크 모드도 따라옵니다 */
-function Icon({ path }: { path: string }) {
-  return (
-    <svg className="icon" viewBox="0 0 14 14" aria-hidden="true" focusable="false">
-      <path d={path} fill="none" stroke="currentColor" strokeWidth="1.3"
-        strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
   )
 }
 
@@ -582,28 +533,5 @@ function TpoRow({ label, value, onChange, editing, type = 'text', raw, edited = 
         {edited && <span className="field-edited">직접 수정됨</span>}
       </span>
     </label>
-  )
-}
-
-function Section({
-  title,
-  note,
-  count,
-  children,
-}: {
-  title: string
-  note: string
-  count?: number
-  children: React.ReactNode
-}) {
-  return (
-    <section className="doc-section">
-      <h2 className="doc-title">
-        {title}
-        {count !== undefined && <span className="doc-count">{count}</span>}
-        <span className="doc-note">{note}</span>
-      </h2>
-      {children}
-    </section>
   )
 }
